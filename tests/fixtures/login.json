@@ -1,0 +1,67 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "success": true,
+  "api_version": 1,
+  "authtoken": "token-1",
+  "user": {
+   "establishment_id": "999",
+   "id": "5001",
+   "gender": "",
+   "title": "Mx",
+   "forename": "Pat",
+   "surname": "Parent",
+   "username": "p_example",
+   "types": [
+    "parent"
+   ],
+   "remember_password_permitted": false
+  },
+  "children": [
+   {
+    "id": "7001",
+    "gender": "",
+    "forename": "Alex",
+    "surname": "Example",
+    "community_group_id": "1",
+    "year_group_id": "2",
+    "form_group_id": "3"
+   },
+   {
+    "id": "7002",
+    "gender": "",
+    "forename": "Sam",
+    "surname": "Example",
+    "community_group_id": "1",
+    "year_group_id": "4",
+    "form_group_id": "5"
+   }
+  ],
+  "learner_menu": [
+   {
+    "id": "timetable",
+    "name": "Timetable"
+   },
+   {
+    "id": "homework",
+    "name": "Homework"
+   },
+   {
+    "id": "catering",
+    "name": "Catering"
+   },
+   {
+    "id": "attendance",
+    "name": "Attendance"
+   },
+   {
+    "id": "behaviour",
+    "name": "Behaviour"
+   }
+  ],
+  "establishment": {
+   "name": "Example Academy"
+  }
+ },
+ "id": "1"
+}

@@ -1,0 +1,144 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Find your school",
+        "description": "Enter your school's Edulink school code or postcode.",
+        "data": {
+          "school_code": "School code or postcode"
+        }
+      },
+      "credentials": {
+        "title": "Sign in to {school}",
+        "description": "Use the Edulink username and password you use on the website or app.",
+        "data": {
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]"
+        }
+      },
+      "learners": {
+        "title": "Choose children",
+        "description": "Each child is added as a separate device.",
+        "data": {
+          "learners": "Children"
+        }
+      },
+      "reauth_confirm": {
+        "title": "[%key:common::config_flow::title::reauth%]",
+        "description": "Edulink rejected the saved credentials. Enter them again.",
+        "data": {
+          "username": "[%key:common::config_flow::data::username%]",
+          "password": "[%key:common::config_flow::data::password%]"
+        }
+      }
+    },
+    "error": {
+      "school_not_found": "No school found for that code or postcode.",
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "no_learners": "No children are linked to this account, or none were selected.",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
+    },
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_account%]",
+      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
+      "sso_only": "This school only allows Microsoft sign-in, which this integration does not support.",
+      "wrong_account": "These credentials belong to a different Edulink account."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edulink options",
+        "data": {
+          "low_balance_threshold": "Low catering balance threshold",
+          "homework_interval": "Homework update interval",
+          "catering_interval": "Catering update interval during the school day"
+        },
+        "data_description": {
+          "catering_interval": "Outside 07:30 to 16:00 on weekdays catering updates every 2 hours.",
+          "homework_interval": "Between 22:00 and 06:00 homework updates every 2 hours."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "school_today": {
+        "name": "School today"
+      },
+      "school_tomorrow": {
+        "name": "School tomorrow"
+      },
+      "low_catering_balance": {
+        "name": "Low catering balance"
+      }
+    },
+    "calendar": {
+      "timetable": {
+        "name": "Timetable"
+      },
+      "homework": {
+        "name": "Homework"
+      }
+    },
+    "sensor": {
+      "current_lesson": {
+        "name": "Current lesson"
+      },
+      "next_lesson": {
+        "name": "Next lesson"
+      },
+      "school_day_start": {
+        "name": "School day start"
+      },
+      "school_day_end": {
+        "name": "School day end"
+      },
+      "next_school_day": {
+        "name": "Next school day"
+      },
+      "lessons_tomorrow": {
+        "name": "Lessons tomorrow"
+      },
+      "timetable_week": {
+        "name": "Timetable week"
+      },
+      "homework_outstanding": {
+        "name": "Homework outstanding"
+      },
+      "homework_due_today": {
+        "name": "Homework due today"
+      },
+      "homework_due_tomorrow": {
+        "name": "Homework due tomorrow"
+      },
+      "next_homework_due": {
+        "name": "Next homework due"
+      },
+      "homework_overdue": {
+        "name": "Overdue homework"
+      },
+      "catering_balance": {
+        "name": "Catering balance"
+      },
+      "last_purchase": {
+        "name": "Last purchase"
+      },
+      "spent_today": {
+        "name": "Spent today"
+      },
+      "spent_this_week": {
+        "name": "Spent this week"
+      },
+      "last_top_up": {
+        "name": "Last top-up"
+      }
+    },
+    "todo": {
+      "homework": {
+        "name": "Homework"
+      }
+    }
+  }
+}

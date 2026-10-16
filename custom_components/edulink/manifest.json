@@ -1,0 +1,12 @@
+{
+  "domain": "edulink",
+  "name": "Edulink One",
+  "codeowners": ["@carpet"],
+  "config_flow": true,
+  "documentation": "https://github.com/carpet/edulink",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/carpet/edulink/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

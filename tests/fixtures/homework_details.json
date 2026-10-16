@@ -1,0 +1,14 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "success": true,
+  "homework": {
+   "description": "<p>Read <b>chapter 3</b></p><p>Answer   questions&nbsp;1-4</p>",
+   "activity": "x",
+   "subject": "x",
+   "due_date": "2026-10-17",
+   "available_date": "2026-10-01 00:00:00"
+  }
+ },
+ "id": "1"
+}

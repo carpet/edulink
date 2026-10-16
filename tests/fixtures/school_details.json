@@ -1,0 +1,16 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "establishment": {
+   "id": "999",
+   "name": "Example Academy",
+   "logo": "",
+   "idp_only": false,
+   "idp_login": {
+    "microsoftonline": "https://example.invalid"
+   }
+  },
+  "success": true
+ },
+ "id": "1"
+}

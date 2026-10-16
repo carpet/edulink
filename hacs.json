@@ -1,0 +1,7 @@
+{
+  "name": "Edulink One",
+  "render_readme": true,
+  "homeassistant": "2026.10.0",
+  "zip_release": true,
+  "filename": "edulink.zip"
+}

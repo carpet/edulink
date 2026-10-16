@@ -1,0 +1,1922 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "date_range": {
+   "abc123": {
+    "start": "2026-10-12",
+    "end": "2026-11-08"
+   },
+   "info": "Not for UI use"
+  },
+  "success": true,
+  "weeks": [
+   {
+    "name": "Week commencing Monday 12 October 2026",
+    "days": [
+     {
+      "cycle_day_id": "91",
+      "date": "2026-10-12",
+      "name": "AMon",
+      "lessons": [
+       {
+        "period_id": "AMon5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "AMon0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "AMon2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "AMon1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "AMon4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "AMon3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "AMon0",
+        "end_time": "08:50",
+        "name": "AMon:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "AMon1",
+        "end_time": "09:50",
+        "name": "AMon:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "AMon2",
+        "end_time": "10:50",
+        "name": "AMon:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "AMon3",
+        "end_time": "12:10",
+        "name": "AMon:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "AMon4",
+        "end_time": "13:10",
+        "name": "AMon:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "AMon5",
+        "end_time": "15:00",
+        "name": "AMon:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "28",
+      "date": "2026-10-13",
+      "name": "ATue",
+      "lessons": [
+       {
+        "period_id": "ATue5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "ATue0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "ATue2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "ATue1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "ATue4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "ATue3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "ATue0",
+        "end_time": "08:50",
+        "name": "ATue:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "ATue1",
+        "end_time": "09:50",
+        "name": "ATue:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "ATue2",
+        "end_time": "10:50",
+        "name": "ATue:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "ATue3",
+        "end_time": "12:10",
+        "name": "ATue:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "ATue4",
+        "end_time": "13:10",
+        "name": "ATue:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "ATue5",
+        "end_time": "15:00",
+        "name": "ATue:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "59",
+      "date": "2026-10-14",
+      "name": "AWed",
+      "lessons": [
+       {
+        "period_id": "AWed5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "AWed0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "AWed2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "AWed1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "AWed4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "AWed3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "AWed0",
+        "end_time": "08:50",
+        "name": "AWed:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "AWed1",
+        "end_time": "09:50",
+        "name": "AWed:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "AWed2",
+        "end_time": "10:50",
+        "name": "AWed:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "AWed3",
+        "end_time": "12:10",
+        "name": "AWed:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "AWed4",
+        "end_time": "13:10",
+        "name": "AWed:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "AWed5",
+        "end_time": "15:00",
+        "name": "AWed:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "51",
+      "date": "2026-10-15",
+      "name": "AThu",
+      "lessons": [
+       {
+        "period_id": "AThu5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "AThu0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "AThu2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "AThu1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "AThu4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "AThu3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "AThu0",
+        "end_time": "08:50",
+        "name": "AThu:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "AThu1",
+        "end_time": "09:50",
+        "name": "AThu:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "AThu2",
+        "end_time": "10:50",
+        "name": "AThu:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "AThu3",
+        "end_time": "12:10",
+        "name": "AThu:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "AThu4",
+        "end_time": "13:10",
+        "name": "AThu:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "AThu5",
+        "end_time": "15:00",
+        "name": "AThu:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "69",
+      "date": "2026-10-16",
+      "name": "AFri",
+      "lessons": [
+       {
+        "period_id": "AFri5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "AFri0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "AFri2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "AFri1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "AFri4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "AFri3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Drama"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "AFri0",
+        "end_time": "08:50",
+        "name": "AFri:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "AFri1",
+        "end_time": "09:50",
+        "name": "AFri:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "AFri2",
+        "end_time": "10:50",
+        "name": "AFri:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "AFri3",
+        "end_time": "12:10",
+        "name": "AFri:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "AFri4",
+        "end_time": "13:10",
+        "name": "AFri:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "AFri5",
+        "end_time": "15:00",
+        "name": "AFri:5",
+        "start_time": "14:00"
+       }
+      ],
+      "is_current": true
+     }
+    ]
+   },
+   {
+    "name": "Week commencing Monday 19 October 2026",
+    "days": [
+     {
+      "cycle_day_id": "39",
+      "date": "2026-10-19",
+      "name": "BMon",
+      "lessons": [
+       {
+        "period_id": "BMon5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "BMon0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "BMon2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "BMon1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "BMon4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "BMon3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "BMon0",
+        "end_time": "08:50",
+        "name": "BMon:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "BMon1",
+        "end_time": "09:50",
+        "name": "BMon:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "BMon2",
+        "end_time": "10:50",
+        "name": "BMon:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "BMon3",
+        "end_time": "12:10",
+        "name": "BMon:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "BMon4",
+        "end_time": "13:10",
+        "name": "BMon:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "BMon5",
+        "end_time": "15:00",
+        "name": "BMon:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "62",
+      "date": "2026-10-20",
+      "name": "BTue",
+      "lessons": [
+       {
+        "period_id": "BTue5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "BTue0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "BTue2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "BTue1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "BTue4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "BTue3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "BTue0",
+        "end_time": "08:50",
+        "name": "BTue:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "BTue1",
+        "end_time": "09:50",
+        "name": "BTue:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "BTue2",
+        "end_time": "10:50",
+        "name": "BTue:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "BTue3",
+        "end_time": "12:10",
+        "name": "BTue:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "BTue4",
+        "end_time": "13:10",
+        "name": "BTue:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "BTue5",
+        "end_time": "15:00",
+        "name": "BTue:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "79",
+      "date": "2026-10-21",
+      "name": "BWed",
+      "lessons": [
+       {
+        "period_id": "BWed5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "BWed0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "BWed2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "BWed1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "BWed4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "BWed3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "BWed0",
+        "end_time": "08:50",
+        "name": "BWed:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "BWed1",
+        "end_time": "09:50",
+        "name": "BWed:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "BWed2",
+        "end_time": "10:50",
+        "name": "BWed:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "BWed3",
+        "end_time": "12:10",
+        "name": "BWed:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "BWed4",
+        "end_time": "13:10",
+        "name": "BWed:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "BWed5",
+        "end_time": "15:00",
+        "name": "BWed:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "63",
+      "date": "2026-10-22",
+      "name": "BThu",
+      "lessons": [
+       {
+        "period_id": "BThu5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "BThu0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "BThu2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "BThu1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "BThu4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "BThu3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "BThu0",
+        "end_time": "08:50",
+        "name": "BThu:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "BThu1",
+        "end_time": "09:50",
+        "name": "BThu:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "BThu2",
+        "end_time": "10:50",
+        "name": "BThu:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "BThu3",
+        "end_time": "12:10",
+        "name": "BThu:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "BThu4",
+        "end_time": "13:10",
+        "name": "BThu:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "BThu5",
+        "end_time": "15:00",
+        "name": "BThu:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "59",
+      "date": "2026-10-23",
+      "name": "BFri",
+      "lessons": [
+       {
+        "period_id": "BFri5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "BFri0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "BFri2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "BFri1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "BFri4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "BFri3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Drama"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "BFri0",
+        "end_time": "08:50",
+        "name": "BFri:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "BFri1",
+        "end_time": "09:50",
+        "name": "BFri:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "BFri2",
+        "end_time": "10:50",
+        "name": "BFri:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "BFri3",
+        "end_time": "12:10",
+        "name": "BFri:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "BFri4",
+        "end_time": "13:10",
+        "name": "BFri:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "BFri5",
+        "end_time": "15:00",
+        "name": "BFri:5",
+        "start_time": "14:00"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "Week commencing Monday 2 November 2026",
+    "days": [
+     {
+      "cycle_day_id": "91",
+      "date": "2026-11-02",
+      "name": "AMon",
+      "lessons": [
+       {
+        "period_id": "AMon5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "AMon0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "AMon2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "AMon1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "AMon4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "AMon3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "AMon0",
+        "end_time": "08:50",
+        "name": "AMon:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "AMon1",
+        "end_time": "09:50",
+        "name": "AMon:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "AMon2",
+        "end_time": "10:50",
+        "name": "AMon:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "AMon3",
+        "end_time": "12:10",
+        "name": "AMon:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "AMon4",
+        "end_time": "13:10",
+        "name": "AMon:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "AMon5",
+        "end_time": "15:00",
+        "name": "AMon:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "28",
+      "date": "2026-11-03",
+      "name": "ATue",
+      "lessons": [
+       {
+        "period_id": "ATue5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "ATue0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "ATue2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "ATue1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "ATue4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "ATue3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "ATue0",
+        "end_time": "08:50",
+        "name": "ATue:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "ATue1",
+        "end_time": "09:50",
+        "name": "ATue:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "ATue2",
+        "end_time": "10:50",
+        "name": "ATue:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "ATue3",
+        "end_time": "12:10",
+        "name": "ATue:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "ATue4",
+        "end_time": "13:10",
+        "name": "ATue:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "ATue5",
+        "end_time": "15:00",
+        "name": "ATue:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "59",
+      "date": "2026-11-04",
+      "name": "AWed",
+      "lessons": [
+       {
+        "period_id": "AWed5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "AWed0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "AWed2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "AWed1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "AWed4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "AWed3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "AWed0",
+        "end_time": "08:50",
+        "name": "AWed:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "AWed1",
+        "end_time": "09:50",
+        "name": "AWed:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "AWed2",
+        "end_time": "10:50",
+        "name": "AWed:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "AWed3",
+        "end_time": "12:10",
+        "name": "AWed:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "AWed4",
+        "end_time": "13:10",
+        "name": "AWed:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "AWed5",
+        "end_time": "15:00",
+        "name": "AWed:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "51",
+      "date": "2026-11-05",
+      "name": "AThu",
+      "lessons": [
+       {
+        "period_id": "AThu5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "AThu0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "AThu2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "AThu1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "AThu4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "AThu3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Science"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "AThu0",
+        "end_time": "08:50",
+        "name": "AThu:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "AThu1",
+        "end_time": "09:50",
+        "name": "AThu:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "AThu2",
+        "end_time": "10:50",
+        "name": "AThu:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "AThu3",
+        "end_time": "12:10",
+        "name": "AThu:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "AThu4",
+        "end_time": "13:10",
+        "name": "AThu:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "AThu5",
+        "end_time": "15:00",
+        "name": "AThu:5",
+        "start_time": "14:00"
+       }
+      ]
+     },
+     {
+      "cycle_day_id": "69",
+      "date": "2026-11-06",
+      "name": "AFri",
+      "lessons": [
+       {
+        "period_id": "AFri5",
+        "teachers": "Dr Teacher5",
+        "teaching_group": {
+         "name": "10X/Ph",
+         "subject": "Physical Education"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R5"
+        }
+       },
+       {
+        "period_id": "AFri0",
+        "room": {
+         "name": "F1"
+        },
+        "teachers": "Mx Form",
+        "teaching_group": {
+         "name": "10X",
+         "subject": "10X"
+        },
+        "teacher": {
+         "title": "Mx"
+        }
+       },
+       {
+        "period_id": "AFri2",
+        "teachers": "Dr Teacher2",
+        "teaching_group": {
+         "name": "10X/En",
+         "subject": "English"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R2"
+        }
+       },
+       {
+        "period_id": "AFri1",
+        "teachers": "Dr Teacher1",
+        "teaching_group": {
+         "name": "10X/Ma",
+         "subject": "Mathematics"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R1"
+        }
+       },
+       {
+        "period_id": "AFri4",
+        "teachers": "Dr Teacher4",
+        "teaching_group": {
+         "name": "10X/Hi",
+         "subject": "History"
+        },
+        "teacher": {
+         "title": "Dr"
+        }
+       },
+       {
+        "period_id": "AFri3",
+        "teachers": "Dr Teacher3",
+        "teaching_group": {
+         "name": "10X/Sc",
+         "subject": "Drama"
+        },
+        "teacher": {
+         "title": "Dr"
+        },
+        "room": {
+         "name": "R3"
+        }
+       }
+      ],
+      "periods": [
+       {
+        "id": "AFri0",
+        "end_time": "08:50",
+        "name": "AFri:Reg",
+        "start_time": "08:30"
+       },
+       {
+        "id": "AFri1",
+        "end_time": "09:50",
+        "name": "AFri:1",
+        "start_time": "08:50"
+       },
+       {
+        "id": "AFri2",
+        "end_time": "10:50",
+        "name": "AFri:2",
+        "start_time": "09:50"
+       },
+       {
+        "id": "AFri3",
+        "end_time": "12:10",
+        "name": "AFri:3",
+        "start_time": "11:10"
+       },
+       {
+        "id": "AFri4",
+        "end_time": "13:10",
+        "name": "AFri:4",
+        "start_time": "12:10"
+       },
+       {
+        "id": "AFri5",
+        "end_time": "15:00",
+        "name": "AFri:5",
+        "start_time": "14:00"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "id": "1"
+}

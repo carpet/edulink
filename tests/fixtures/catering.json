@@ -1,0 +1,54 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "success": true,
+  "balance": 11,
+  "transactions": [
+   {
+    "date": "2026-10-12 12:31:54",
+    "items": [
+     {
+      "item": "DISH OF DAY ",
+      "price": -2.4
+     },
+     {
+      "item": "FLAVOURED WATER ",
+      "price": -1
+     }
+    ]
+   },
+   {
+    "date": "2026-10-16 12:34:38",
+    "items": [
+     {
+      "item": "PIZZA SLICE ",
+      "price": -1.8
+     },
+     {
+      "item": "FLAVOURED WATER ",
+      "price": -1
+     }
+    ]
+   },
+   {
+    "date": "2026-10-15 08:00:00",
+    "items": [
+     {
+      "item": "PC Revaluer",
+      "price": 15
+     }
+    ]
+   },
+   {
+    "date": "2026-10-09 12:30:00",
+    "items": [
+     {
+      "item": "PASTA ",
+      "price": -2.2
+     }
+    ]
+   }
+  ]
+ },
+ "id": "1"
+}

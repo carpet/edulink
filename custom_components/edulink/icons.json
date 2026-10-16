@@ -1,0 +1,35 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "school_today": { "default": "mdi:school-outline", "state": { "on": "mdi:school" } },
+      "school_tomorrow": { "default": "mdi:school-outline", "state": { "on": "mdi:school" } },
+      "low_catering_balance": { "default": "mdi:wallet-outline", "state": { "on": "mdi:wallet-bifold-outline" } }
+    },
+    "calendar": {
+      "timetable": { "default": "mdi:timetable" },
+      "homework": { "default": "mdi:book-clock" }
+    },
+    "sensor": {
+      "current_lesson": { "default": "mdi:human-male-board" },
+      "next_lesson": { "default": "mdi:clock-start" },
+      "school_day_start": { "default": "mdi:bell-ring-outline" },
+      "school_day_end": { "default": "mdi:bell-outline" },
+      "next_school_day": { "default": "mdi:calendar-arrow-right" },
+      "lessons_tomorrow": { "default": "mdi:bag-personal-outline" },
+      "timetable_week": { "default": "mdi:calendar-week" },
+      "homework_outstanding": { "default": "mdi:book-open-variant" },
+      "homework_due_today": { "default": "mdi:book-alert" },
+      "homework_due_tomorrow": { "default": "mdi:book-clock" },
+      "next_homework_due": { "default": "mdi:calendar-clock" },
+      "homework_overdue": { "default": "mdi:book-remove" },
+      "catering_balance": { "default": "mdi:wallet" },
+      "last_purchase": { "default": "mdi:food" },
+      "spent_today": { "default": "mdi:cash-minus" },
+      "spent_this_week": { "default": "mdi:cash-multiple" },
+      "last_top_up": { "default": "mdi:cash-plus" }
+    },
+    "todo": {
+      "homework": { "default": "mdi:clipboard-check-outline" }
+    }
+  }
+}

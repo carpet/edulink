@@ -1,0 +1,11 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "success": true,
+  "school": {
+   "school_id": 999,
+   "server": "https://www9.edulinkone.com/api/"
+  }
+ },
+ "id": "1"
+}
