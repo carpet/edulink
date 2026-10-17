@@ -80,12 +80,12 @@ result.homework.current[] / past[]: { id: str, activity, subject, due_date: "YYY
 ### Catering (`EduLink.Catering`, params `learner_id`)
 
 ```
-result.balance: int
+result.balance: int | float
 result.transactions[]: { date: "YYYY-MM-DD HH:MM:SS", items[]: { item: str (trailing spaces), price: float } }
 ```
 
 - Item prices are pounds as floats, purchases negative; top-ups appear as positive items named `PC Revaluer`.
-- **`balance` is an integer** while prices are floats. Confirmed as pounds: the API returned `11` when the app showed £11.00. Behaviour for a balance with pence (truncated, rounded, or returned as a float) is still [unverified]; check the next time the app shows a non-whole balance.
+- **`balance` is a number in pounds**: an integer for a whole-pound balance (`11` when the app showed £11.00) and a float otherwise (a second account returned `13.5` on 2026-10-17). Pence are not dropped. The £13.50 figure was not compared against the app.
 - Transactions covered about four weeks (14 entries). The window size is [unverified].
 - No menu data exists in the API.
 
@@ -241,7 +241,7 @@ No external requirements (aiohttp ships with HA).
 
 ## 5. Decisions (2026-10-16)
 
-1. Catering balance confirmed as pounds for a whole-pound balance (£11.00); non-whole behaviour unverified.
+1. Catering balance confirmed as pounds: integer for whole pounds (£11.00), float with pence (13.5 seen on 2026-10-17).
 2. Read-only for now. `HomeworkCompleted` is not called; the to-do list is read-only.
 3. Repository `carpet/edulink` on GitHub.
 4. Attendance, behaviour and achievement deferred. See `HANDOVER.md` for how to add them.

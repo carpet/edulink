@@ -53,7 +53,7 @@ One device per child. Entities are only created for modules your school has enab
 | `sensor.<child>_spent_today` / `_spent_this_week` | Spend since midnight / Monday |
 | `sensor.<child>_last_top_up` | Time of last top-up. Attribute `amount` |
 
-Edulink returns the catering balance as a whole number. It is correct for whole-pound balances; whether pence are dropped for other balances has not yet been confirmed.
+Edulink returns the catering balance in pounds, as a whole number when there are no pence and a decimal otherwise (for example `13.5` for £13.50).
 
 ## Options
 

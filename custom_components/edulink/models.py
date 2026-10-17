@@ -406,8 +406,7 @@ class Catering:
 def parse_catering(result: dict[str, Any]) -> Catering:
     """Parse an EduLink.Catering result.
 
-    The API returns balance as an integer. Confirmed as pounds for a whole-pound
-    balance; behaviour for a balance with pence is unverified.
+    Balance is in pounds: an int for whole pounds (11), a float otherwise (13.5).
     """
     balance = result.get("balance")
     transactions: list[CateringTransaction] = []
