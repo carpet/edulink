@@ -5,7 +5,6 @@ All fixture data is synthetic; no real school, learner or staff data.
 
 from __future__ import annotations
 
-import copy
 import json
 from pathlib import Path
 from typing import Any
@@ -44,6 +43,12 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     return
 
 
+@pytest.fixture(autouse=True)
+async def uk_time_zone(hass):
+    """Run Home Assistant in the school's time zone, as real users do."""
+    await hass.config.async_set_time_zone("Europe/London")
+
+
 class FakeEdulink:
     """Routes JSON-RPC calls to fixtures, with switchable failures."""
 
@@ -58,9 +63,15 @@ class FakeEdulink:
             "EduLink.HomeworkDetails": load("homework_details.json"),
             "EduLink.Catering": load("catering.json"),
         }
+        # Per-learner overrides, keyed by (method, learner_id).
+        self.learner_responses: dict[tuple[str, str], dict[str, Any]] = {}
+        self.learner_errors: dict[tuple[str, str], str] = {}
         self.errors: dict[str, str] = {}
         self.network_errors: set[str] = set()
-        self.expire_session = False
+        # Session state: Login opens a session, Logout or expire() ends it.
+        self.logged_in = False
+        # Simulate a server that rejects every session, even straight after login.
+        self.reject_sessions = False
         self.calls: list[tuple[str, dict[str, Any]]] = []
         mock.post(SERVER, side_effect=self._handle)
         mock.post(PROVISIONING, side_effect=self._handle)
@@ -69,22 +80,35 @@ class FakeEdulink:
         """Names of the methods called so far."""
         return [method for method, _ in self.calls]
 
-    def set_result(self, method: str, **changes: Any) -> None:
-        """Change fields of a method's result."""
-        result = copy.deepcopy(self.responses[method])
-        result["result"].update(changes)
-        self.responses[method] = result
+    def expire(self) -> None:
+        """End the current session, as Edulink does after ~2h idle."""
+        self.logged_in = False
 
     async def _handle(self, method: str, url: Any, data: dict[str, Any]):
         rpc = data["method"]
-        self.calls.append((rpc, data["params"]))
+        params = data["params"]
+        self.calls.append((rpc, params))
+        key = (rpc, str(params.get("learner_id")))
         if rpc in self.network_errors:
             return AiohttpClientMockResponse(method, url, exc=aiohttp.ClientError())
-        if self.expire_session and rpc != "EduLink.Login":
-            self.expire_session = False
-            return self._error(method, url, rpc, "You are not logged in")
         if rpc in self.errors:
             return self._error(method, url, rpc, self.errors[rpc])
+        if rpc == "EduLink.Login":
+            self.logged_in = True
+        elif rpc == "EduLink.Logout":
+            self.logged_in = False
+        elif (
+            rpc.startswith("EduLink.")
+            and rpc != "EduLink.SchoolDetails"
+            and (not self.logged_in or self.reject_sessions)
+        ):
+            return self._error(method, url, rpc, "You are not logged in")
+        if key in self.learner_errors:
+            return self._error(method, url, rpc, self.learner_errors[key])
+        if key in self.learner_responses:
+            return AiohttpClientMockResponse(
+                method, url, json=self.learner_responses[key]
+            )
         if rpc not in self.responses:
             return self._error(method, url, rpc, f"Invalid API method {rpc}")
         return AiohttpClientMockResponse(method, url, json=self.responses[rpc])
@@ -120,6 +144,17 @@ def entry_data() -> dict[str, Any]:
         CONF_USER_ID: "5001",
         CONF_LEARNERS: ["7001"],
     }
+
+
+@pytest.fixture
+def two_learner_entry(entry_data: dict[str, Any]) -> MockConfigEntry:
+    """A config entry for both children."""
+    return MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="999_5001",
+        data={**entry_data, CONF_LEARNERS: ["7001", "7002"]},
+        title="Example",
+    )
 
 
 @pytest.fixture

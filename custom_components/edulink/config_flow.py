@@ -6,7 +6,12 @@ from collections.abc import Mapping
 import logging
 from typing import Any
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
+from homeassistant.config_entries import (
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+    OptionsFlowWithReload,
+)
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -242,7 +247,7 @@ class EdulinkConfigFlow(ConfigFlow, domain=DOMAIN):
         return EdulinkOptionsFlow()
 
 
-class EdulinkOptionsFlow(OptionsFlow):
+class EdulinkOptionsFlow(OptionsFlowWithReload):
     """Polling intervals and the low-balance threshold."""
 
     async def async_step_init(

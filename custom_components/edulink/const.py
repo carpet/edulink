@@ -7,8 +7,6 @@ from typing import Final
 
 DOMAIN: Final = "edulink"
 
-PROVISIONING_URL: Final = "https://provisioning.edulinkone.com/"
-
 CONF_SCHOOL_CODE: Final = "school_code"
 CONF_SERVER: Final = "server"
 CONF_ESTABLISHMENT_ID: Final = "establishment_id"
@@ -26,6 +24,8 @@ DEFAULT_CATERING_INTERVAL: Final = 15  # minutes
 
 TIMETABLE_INTERVAL: Final = timedelta(hours=6)
 OFF_HOURS_INTERVAL: Final = timedelta(hours=2)
+# Retry delay after a failed poll, so a blip does not cost a full interval.
+RETRY_INTERVAL: Final = timedelta(minutes=15)
 
 # Overdue homework only looks back this far; older "Not submitted" items are noise.
 OVERDUE_WINDOW_DAYS: Final = 14

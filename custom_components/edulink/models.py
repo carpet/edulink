@@ -20,8 +20,22 @@ TOP_UP_ITEM = "PC Revaluer"
 _CYCLE_WEEK = re.compile(r"^([A-Z])(Mon|Tue|Wed|Thu|Fri|Sat|Sun)$")
 
 
-def _parse_dt(value: str | None) -> datetime | None:
-    if not value:
+def _dict(value: Any) -> dict[str, Any]:
+    """Value if it is a dict, else empty: Edulink fields are not type-stable."""
+    return value if isinstance(value, dict) else {}
+
+
+def _dicts(value: Any) -> list[dict[str, Any]]:
+    """The dict items of a list; anything else is dropped."""
+    return [i for i in value if isinstance(i, dict)] if isinstance(value, list) else []
+
+
+def _str(value: Any) -> str:
+    return "" if value is None else str(value)
+
+
+def _parse_dt(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value:
         return None
     try:
         return datetime.fromisoformat(value).replace(tzinfo=SCHOOL_TZ)
@@ -29,8 +43,8 @@ def _parse_dt(value: str | None) -> datetime | None:
         return None
 
 
-def _parse_date(value: str | None) -> date | None:
-    if not value:
+def _parse_date(value: Any) -> date | None:
+    if not isinstance(value, str) or not value:
         return None
     try:
         return date.fromisoformat(value[:10])
@@ -88,7 +102,6 @@ class Lesson:
             "end": self.end.isoformat(),
             "subject": self.subject,
             "room": self.room,
-            "teacher": self.teacher,
         }
 
 
@@ -125,9 +138,30 @@ class SchoolDay:
 
 @dataclass(slots=True)
 class Timetable:
-    """All days returned by EduLink.Timetable, keyed by date."""
+    """All days returned by EduLink.Timetable, keyed by date.
 
+    Edulink returns from the Monday of the requested date's week, or from the
+    next school week if that week is a holiday, and omits holiday weeks. So
+    every date from the request to the last day returned is known: a date
+    missing from days in that range has no school.
+    """
+
+    requested: date | None = None
     days: dict[date, SchoolDay] = field(default_factory=dict)
+
+    def covers(self, on: date) -> bool:
+        """Whether the timetable can say if there is school on a date."""
+        if on in self.days:
+            return True
+        return (
+            self.requested is not None
+            and bool(self.days)
+            and self.requested <= on <= max(self.days)
+        )
+
+    def is_school_day(self, on: date) -> bool | None:
+        """True or False within the covered range, None outside it."""
+        return (on in self.days) if self.covers(on) else None
 
     def day(self, on: date) -> SchoolDay | None:
         """The school day on a date, if any."""
@@ -168,17 +202,17 @@ class Timetable:
         return None
 
 
-def parse_timetable(result: dict[str, Any]) -> Timetable:
-    """Parse an EduLink.Timetable result."""
-    timetable = Timetable()
-    for week in result.get("weeks") or []:
-        for raw_day in week.get("days") or []:
+def parse_timetable(result: dict[str, Any], requested: date | None = None) -> Timetable:
+    """Parse an EduLink.Timetable result fetched for the requested date."""
+    timetable = Timetable(requested=requested)
+    for week in _dicts(result.get("weeks")):
+        for raw_day in _dicts(week.get("days")):
             day = _parse_date(raw_day.get("date"))
             if day is None:
                 continue
-            periods = {str(p.get("id")): p for p in raw_day.get("periods") or []}
+            periods = {str(p.get("id")): p for p in _dicts(raw_day.get("periods"))}
             lessons: list[Lesson] = []
-            for raw in raw_day.get("lessons") or []:
+            for raw in _dicts(raw_day.get("lessons")):
                 period = periods.get(str(raw.get("period_id")))
                 if not period:
                     continue
@@ -186,33 +220,33 @@ def parse_timetable(result: dict[str, Any]) -> Timetable:
                 end = _combine(day, period.get("end_time"))
                 if start is None or end is None:
                     continue
-                name = str(period.get("name") or "")
-                group = raw.get("teaching_group") or {}
-                room = (raw.get("room") or {}).get("name")
+                name = _str(period.get("name"))
+                group = _dict(raw.get("teaching_group"))
+                room = _dict(raw.get("room")).get("name")
                 lessons.append(
                     Lesson(
                         period=name.split(":", 1)[-1],
                         start=start,
                         end=end,
-                        subject=str(group.get("subject") or ""),
-                        group=str(group.get("name") or ""),
-                        room=str(room) if room else None,
-                        teacher=raw.get("teachers") or None,
+                        subject=_str(group.get("subject")),
+                        group=_str(group.get("name")),
+                        room=_str(room) or None,
+                        teacher=_str(raw.get("teachers")) or None,
                         is_registration=name.lower().endswith(":reg"),
                     )
                 )
             lessons.sort(key=lambda lesson: lesson.start)
             timetable.days[day] = SchoolDay(
                 date=day,
-                name=str(raw_day.get("name") or ""),
-                cycle_day_id=raw_day.get("cycle_day_id"),
+                name=_str(raw_day.get("name")),
+                cycle_day_id=_str(raw_day.get("cycle_day_id")) or None,
                 lessons=tuple(lessons),
             )
     return timetable
 
 
-def _combine(day: date, hhmm: str | None) -> datetime | None:
-    if not hhmm:
+def _combine(day: date, hhmm: Any) -> datetime | None:
+    if not isinstance(hhmm, str) or not hhmm:
         return None
     try:
         return datetime.combine(day, time.fromisoformat(hhmm), SCHOOL_TZ)
@@ -245,7 +279,6 @@ class Homework:
             "subject": self.subject,
             "activity": self.activity,
             "due": self.due.isoformat(),
-            "set_by": self.set_by,
             "status": self.status,
         }
 
@@ -282,12 +315,12 @@ class HomeworkList:
 
 def parse_homework(result: dict[str, Any], today: date, past_days: int) -> HomeworkList:
     """Parse an EduLink.Homework result, keeping only recent past items."""
-    data = result.get("homework") or {}
+    data = _dict(result.get("homework"))
     since = today - timedelta(days=past_days)
-    current = [hw for raw in data.get("current") or [] if (hw := _homework(raw))]
+    current = [hw for raw in _dicts(data.get("current")) if (hw := _homework(raw))]
     past = [
         hw
-        for raw in data.get("past") or []
+        for raw in _dicts(data.get("past"))
         if (hw := _homework(raw)) and hw.due >= since
     ]
     return HomeworkList(current=current, past=past)
@@ -299,15 +332,15 @@ def _homework(raw: dict[str, Any]) -> Homework | None:
         return None
     return Homework(
         id=str(raw["id"]),
-        subject=str(raw.get("subject") or ""),
-        activity=str(raw.get("activity") or ""),
+        subject=_str(raw.get("subject")),
+        activity=_str(raw.get("activity")),
         due=due,
         set_on=_parse_dt(raw.get("available_date")),
-        set_by=str(raw.get("set_by") or ""),
-        status=str(raw.get("status") or ""),
-        completed=bool(raw.get("completed")),
-        source=str(raw.get("source") or "EduLink"),
-        attachments=len(raw.get("attachments") or []),
+        set_by=_str(raw.get("set_by")),
+        status=_str(raw.get("status")),
+        completed=raw.get("completed") is True,
+        source=_str(raw.get("source")) or "EduLink",
+        attachments=len(_dicts(raw.get("attachments"))),
     )
 
 
@@ -378,18 +411,23 @@ def parse_catering(result: dict[str, Any]) -> Catering:
     """
     balance = result.get("balance")
     transactions: list[CateringTransaction] = []
-    for raw in result.get("transactions") or []:
+    for raw in _dicts(result.get("transactions")):
         when = _parse_dt(raw.get("date"))
         if when is None:
             continue
         items = tuple(
-            CateringItem(name=str(i.get("item") or "").strip(), price=float(i["price"]))
-            for i in raw.get("items") or []
+            CateringItem(name=_str(i.get("item")).strip(), price=float(i["price"]))
+            for i in _dicts(raw.get("items"))
             if isinstance(i.get("price"), int | float)
+            and not isinstance(i["price"], bool)
         )
         transactions.append(CateringTransaction(when=when, items=items))
     transactions.sort(key=lambda t: t.when, reverse=True)
     return Catering(
-        balance=float(balance) if isinstance(balance, int | float) else None,
+        balance=(
+            float(balance)
+            if isinstance(balance, int | float) and not isinstance(balance, bool)
+            else None
+        ),
         transactions=transactions,
     )

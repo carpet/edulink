@@ -40,8 +40,8 @@ class EdulinkEntity[T](CoordinatorEntity[EdulinkCoordinator[T]]):
 
     @property
     def available(self) -> bool:
-        """Available while the coordinator has data for this learner."""
-        return super().available and self.learner.id in (self.coordinator.data or {})
+        """Available while the coordinator has usable data for this learner."""
+        return self.coordinator.is_usable(self.learner.id)
 
     @property
     def learner_data(self) -> T:

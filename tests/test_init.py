@@ -144,7 +144,7 @@ async def test_session_expiry_relogs_in(
 ) -> None:
     """An expired session triggers one login and a retry."""
     fake.calls.clear()
-    fake.expire_session = True
+    fake.expire()
     await setup.runtime_data.catering.async_refresh()
     assert fake.methods() == ["EduLink.Catering", "EduLink.Login", "EduLink.Catering"]
     assert setup.runtime_data.catering.last_update_success
@@ -154,7 +154,7 @@ async def test_auth_failure_starts_reauth(
     hass: HomeAssistant, setup: MockConfigEntry, fake: FakeEdulink
 ) -> None:
     """If re-login fails, reauth starts."""
-    fake.expire_session = True
+    fake.expire()
     fake.errors["EduLink.Login"] = "Incorrect username or password"
     await setup.runtime_data.catering.async_refresh()
     await hass.async_block_till_done()

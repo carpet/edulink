@@ -19,11 +19,11 @@ Your Edulink username and password are stored in Home Assistant's config entry s
 
 One device per child. Entities are only created for modules your school has enabled.
 
-**Timetable** (updated every 6 hours and after midnight; time-based states recalculated every minute)
+**Timetable** (updated every 6 hours and at midnight; time-based states recalculated on the minute. If an update fails, entities keep using the cached timetable while it still covers today)
 
 | Entity | Description |
 |---|---|
-| `sensor.<child>_current_lesson` | Subject, or `Registration`, `Break`, `Not in school`. Attributes: room, teacher, period, start, end |
+| `sensor.<child>_current_lesson` | Subject, or `Registration`, `Break`, `Not in school`. Attributes: room, period, start, end |
 | `sensor.<child>_next_lesson` | Next lesson's subject (looks ahead across days). Same attributes |
 | `sensor.<child>_school_day_start` / `_school_day_end` | Today's first/last period, or the next school day's once today has finished |
 | `sensor.<child>_next_school_day` | Next date after today with a timetable. Attribute `lessons` |
@@ -32,18 +32,18 @@ One device per child. Entities are only created for modules your school has enab
 | `binary_sensor.<child>_school_today` / `_school_tomorrow` | On if there is a timetable that day. Holidays are detected automatically |
 | `calendar.<child>_timetable` | One event per lesson |
 
-**Homework** (every 30 minutes, every 2 hours overnight)
+**Homework** (every 30 minutes, every 2 hours between 22:00 and 06:00; due today/tomorrow roll over at midnight)
 
 | Entity | Description |
 |---|---|
 | `sensor.<child>_homework_outstanding` | Current homework not marked complete. Attribute `homework` lists them |
 | `sensor.<child>_homework_due_today` / `_due_tomorrow` | Outstanding homework due that day |
-| `sensor.<child>_next_homework_due` | Earliest due date, with subject, task, teacher and description |
+| `sensor.<child>_next_homework_due` | Earliest due date, with subject, task, status and description |
 | `sensor.<child>_overdue_homework` | Disabled by default. Incomplete homework due in the last 14 days. Many schools do not track submission in Edulink, so this can be noisy |
 | `todo.<child>_homework` | Current homework as a read-only to-do list |
 | `calendar.<child>_homework` | All-day events on due dates |
 
-**Catering** (every 15 minutes 07:30 to 16:00 on weekdays, otherwise every 2 hours)
+**Catering** (every 15 minutes 07:30 to 16:00 on school days, otherwise every 2 hours. School holidays are taken from the timetable, so catering polls slowly during half-term)
 
 | Entity | Description |
 |---|---|
@@ -107,9 +107,15 @@ automation:
           message: "Catering balance is £{{ states('sensor.alex_catering_balance') }}"
 ```
 
+After any failed update the integration retries within 15 minutes. If one child's data fails to load, the other children are unaffected and the failing child keeps their last values.
+
 ## Privacy
 
-The integration only reads timetable, homework and catering data. It does not read medical, personal, attendance, behaviour or document data. Diagnostics downloads contain counts only, never names, homework text or purchases.
+The integration only reads timetable, homework and catering data. It does not read medical, personal, attendance, behaviour or document data.
+
+Be aware of what ends up in Home Assistant's history. Sensor attributes include lesson subjects and rooms, homework subjects, tasks and descriptions, and catering items bought. Home Assistant's recorder keeps attributes along with states, so these are stored in your database and backups. Teacher names are deliberately kept out of sensor attributes; they appear only in calendar event descriptions, which Home Assistant excludes from the recorder. Exclude entities from the recorder if you do not want this history.
+
+Diagnostics downloads contain counts only, never names, homework text or purchases.
 
 ## Development
 

@@ -23,6 +23,7 @@ from .coordinator import (
     EdulinkRuntimeData,
     HomeworkCoordinator,
     TimetableCoordinator,
+    async_start_clock,
 )
 
 PLATFORMS: list[Platform] = [
@@ -65,16 +66,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: EdulinkConfigEntry) -> b
     if MODULE_HOMEWORK in modules:
         runtime.homework = HomeworkCoordinator(hass, entry, client, learners)
     if MODULE_CATERING in modules:
-        runtime.catering = CateringCoordinator(hass, entry, client, learners)
+        runtime.catering = CateringCoordinator(
+            hass, entry, client, learners, runtime.timetable
+        )
 
-    for coordinator in (runtime.timetable, runtime.homework, runtime.catering):
-        if coordinator is not None:
-            await coordinator.async_config_entry_first_refresh()
-    if runtime.timetable is not None:
-        runtime.timetable.async_start_clock()
+    try:
+        for coordinator in (runtime.timetable, runtime.homework, runtime.catering):
+            if coordinator is not None:
+                await coordinator.async_config_entry_first_refresh()
+    except Exception:
+        # Setup will be retried with a fresh login; close this session.
+        await client.logout()
+        raise
 
     entry.runtime_data = runtime
-    entry.async_on_unload(entry.add_update_listener(_async_reload))
+    async_start_clock(hass, entry, runtime)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
@@ -85,8 +91,3 @@ async def async_unload_entry(hass: HomeAssistant, entry: EdulinkConfigEntry) -> 
     if unloaded:
         await entry.runtime_data.client.logout()
     return unloaded
-
-
-async def _async_reload(hass: HomeAssistant, entry: EdulinkConfigEntry) -> None:
-    """Reload after options change."""
-    await hass.config_entries.async_reload(entry.entry_id)

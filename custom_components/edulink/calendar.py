@@ -9,7 +9,7 @@ from homeassistant.components.calendar import (
     CalendarEntityDescription,
     CalendarEvent,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import EdulinkConfigEntry, school_now
@@ -52,20 +52,62 @@ def _upcoming(events: list[CalendarEvent], now: datetime) -> CalendarEvent | Non
     return min(live, key=lambda e: e.start_datetime_local) if live else None
 
 
-def _between(
-    events: list[CalendarEvent], start: datetime, end: datetime
-) -> list[CalendarEvent]:
-    return [
-        e
-        for e in events
-        if e.start_datetime_local < end and e.end_datetime_local > start
-    ]
+class _EdulinkCalendar[T](EdulinkEntity[T], CalendarEntity):
+    """Builds events once per data update.
 
+    The calendar platform schedules its own state changes at event start and
+    end, so updates that bring no new data (the per-minute clock) are ignored.
+    """
 
-class TimetableCalendar(EdulinkEntity[Timetable], CalendarEntity):
-    """One event per lesson (registration excluded)."""
+    _built_for: T | None = None
+    _built: list[CalendarEvent]
+    _written: tuple[dict[str, T] | None, bool] | None = None
+
+    def _build(self, data: T) -> list[CalendarEvent]:
+        raise NotImplementedError
 
     def _events(self) -> list[CalendarEvent]:
+        data = self.learner_data
+        if data is not self._built_for:
+            self._built = self._build(data)
+            self._built_for = data
+        return self._built
+
+    async def async_added_to_hass(self) -> None:
+        """Remember what the first write was based on."""
+        await super().async_added_to_hass()
+        self._written = (self.coordinator.data, self.available)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        written = (self.coordinator.data, self.available)
+        if self._written and (
+            written[0] is self._written[0] and written[1] == self._written[1]
+        ):
+            return
+        self._written = written
+        super()._handle_coordinator_update()
+
+    @property
+    def event(self) -> CalendarEvent | None:
+        """Current or next event."""
+        return _upcoming(self._events(), school_now())
+
+    async def async_get_events(
+        self, hass: HomeAssistant, start_date: datetime, end_date: datetime
+    ) -> list[CalendarEvent]:
+        """Events overlapping a range."""
+        return [
+            e
+            for e in self._events()
+            if e.start_datetime_local < end_date and e.end_datetime_local > start_date
+        ]
+
+
+class TimetableCalendar(_EdulinkCalendar[Timetable]):
+    """One event per lesson (registration excluded)."""
+
+    def _build(self, data: Timetable) -> list[CalendarEvent]:
         return [
             CalendarEvent(
                 start=lesson.start,
@@ -83,27 +125,15 @@ class TimetableCalendar(EdulinkEntity[Timetable], CalendarEntity):
                 ),
                 uid=f"{self.learner.id}_{lesson.start.isoformat()}",
             )
-            for day in self.learner_data.days.values()
+            for day in data.days.values()
             for lesson in day.teaching
         ]
 
-    @property
-    def event(self) -> CalendarEvent | None:
-        """Current or next lesson."""
-        return _upcoming(self._events(), school_now())
 
-    async def async_get_events(
-        self, hass: HomeAssistant, start_date: datetime, end_date: datetime
-    ) -> list[CalendarEvent]:
-        """Lessons in a range."""
-        return _between(self._events(), start_date, end_date)
-
-
-class HomeworkCalendar(EdulinkEntity[HomeworkList], CalendarEntity):
+class HomeworkCalendar(_EdulinkCalendar[HomeworkList]):
     """All-day events on homework due dates."""
 
-    def _events(self) -> list[CalendarEvent]:
-        data = self.learner_data
+    def _build(self, data: HomeworkList) -> list[CalendarEvent]:
         return [
             CalendarEvent(
                 start=hw.due,
@@ -118,14 +148,3 @@ class HomeworkCalendar(EdulinkEntity[HomeworkList], CalendarEntity):
             )
             for hw in (*data.current, *data.past)
         ]
-
-    @property
-    def event(self) -> CalendarEvent | None:
-        """Next homework due."""
-        return _upcoming(self._events(), school_now())
-
-    async def async_get_events(
-        self, hass: HomeAssistant, start_date: datetime, end_date: datetime
-    ) -> list[CalendarEvent]:
-        """Homework due in a range."""
-        return _between(self._events(), start_date, end_date)

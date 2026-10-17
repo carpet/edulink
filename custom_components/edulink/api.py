@@ -259,7 +259,10 @@ class EdulinkClient:
         try:
             return await _post(self._session, self._url, method, params, self._token)
         except _SessionExpired as err:
-            raise EdulinkAuthError(str(err)) from err
+            # The credentials have just worked, so this is not a reauth case.
+            raise EdulinkError(
+                f"{method}: rejected straight after login: {err}"
+            ) from err
 
     async def _relogin(self, stale_token: str | None) -> None:
         """Log in unless another caller already replaced the stale token."""

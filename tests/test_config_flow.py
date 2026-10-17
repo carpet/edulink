@@ -191,3 +191,32 @@ async def test_options(
     assert entry.options[CONF_LOW_BALANCE] == 20
     # Reloaded with the new threshold: £11 is now low.
     assert hass.states.get("binary_sensor.alex_low_catering_balance").state == "on"
+
+
+async def test_school_details_unexpected_error(
+    hass: HomeAssistant, fake: FakeEdulink
+) -> None:
+    """An unexpected Edulink error during lookup is reported as unknown."""
+    fake.errors["EduLink.SchoolDetails"] = "Something went wrong"
+    result = await _start(hass)
+    assert result["errors"] == {"base": "unknown"}
+
+
+async def test_account_without_learners(hass: HomeAssistant, fake: FakeEdulink) -> None:
+    """An account with no children and no learner id cannot be added."""
+    login = fake.responses["EduLink.Login"]["result"]
+    login["children"] = []
+    login["user"]["id"] = ""
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], CREDS)
+    assert result["errors"] == {"base": "no_learners"}
+
+
+async def test_no_children_selected(hass: HomeAssistant, fake: FakeEdulink) -> None:
+    """At least one child must be chosen."""
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], CREDS)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_LEARNERS: []}
+    )
+    assert result["errors"] == {"base": "no_learners"}

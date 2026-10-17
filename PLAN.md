@@ -55,6 +55,7 @@ result.weeks[]: { name: "Week commencing Monday 12 October 2026",
 ```
 
 - Returns from Monday of the requested week for about five weeks (12 Oct to 15 Nov here). **Holiday weeks are omitted entirely** (half-term week of 26 Oct absent), so "no day entry" means no school.
+- Requested for a weekend or holiday date, it starts at the next school week instead (verified 2026-10-16 for a Saturday, a Sunday, a half-term date and a Christmas date).
 - `requested_date`, `showing_from/to`, `start_of_week`, `day_of_week`, numeric ids, `room.id`, `teaching_group.id` and teacher forename/surname are gone. All ids are strings. Teacher names only appear in the `teachers` free-text string.
 - `is_current` is present only on today, absent (not false) elsewhere.
 - `lessons` are **not ordered**: join on `period_id` to `periods` and sort by `start_time`.
@@ -99,6 +100,8 @@ result.transactions[]: { date: "YYYY-MM-DD HH:MM:SS", items[]: { item: str (trai
 `SchoolDetails.idp_only` is false here, but schools with Microsoft-only sign-in (`idp_only: true`) cannot use username/password. Out of scope for v1; config flow detects it and aborts with a clear message.
 
 ## 2. Proposed entities (per child device)
+
+Sections 2 to 4 are the original plan. Section 6 records where v0.1.1 differs.
 
 Device: `<Child forename>` (model "Edulink One", manufacturer = school name, entity_picture from school logo optional). Unique ids: `{establishment_id}_{learner_id}_{key}`. Names use `has_entity_name`.
 
@@ -214,10 +217,10 @@ Differences: Edulink is `iot_class: cloud_polling` and `integration_type: servic
 {
   "domain": "edulink",
   "name": "Edulink One",
-  "codeowners": ["@<github-user>"],
+  "codeowners": ["@carpet"],
   "config_flow": true,
-  "documentation": "https://github.com/<github-user>/ha-edulink",
-  "issue_tracker": "https://github.com/<github-user>/ha-edulink/issues",
+  "documentation": "https://github.com/carpet/edulink",
+  "issue_tracker": "https://github.com/carpet/edulink/issues",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "requirements": [],
@@ -242,3 +245,19 @@ No external requirements (aiohttp ships with HA).
 2. Read-only for now. `HomeworkCompleted` is not called; the to-do list is read-only.
 3. Repository `carpet/edulink` on GitHub.
 4. Attendance, behaviour and achievement deferred. See `HANDOVER.md` for how to add them.
+
+## 6. As built (v0.1.1)
+
+Differences from sections 2 to 4:
+
+- No `edulink.refresh` service or `services.yaml`; `homeassistant.update_entity` covers it.
+- No reconfigure flow and no way to change the selected children without re-adding the entry (deferred).
+- Options are the low-balance threshold and the homework and catering intervals only. No module include/exclude or overdue-window option; the overdue window is fixed at 14 days.
+- Homework polling does not call `EduLink.Status`.
+- Device manufacturer is "Edulink One" and the model is the school name.
+- Current lesson attributes are room, period, start and end. Teacher names and homework `set_by` are kept out of sensor attributes and appear only in calendar event descriptions.
+- Timetable week is a plain sensor (week letter), without `cycle_day_id` or an enum device class.
+- Times are parsed with `zoneinfo` (Europe/London) in `models.py`, not `dt_util`, to keep that module free of Home Assistant imports.
+- Polling: timetable every 6 hours and at school-time midnight; homework every 30 minutes, capped so it slows exactly at 22:00 and speeds up at 06:00; catering every 15 minutes 07:30 to 16:00 on school days (holidays from the timetable), otherwise up to 2 hours, waking in time for the next opening. Any failed update retries within 15 minutes.
+- Per-learner failures are isolated; timetable entities stay available on cached data that covers today.
+

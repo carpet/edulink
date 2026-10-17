@@ -107,3 +107,138 @@ def test_catering() -> None:
     assert c.top_ups[0].total == 15
     assert c.spent_since(at(16, 0)) == 2.8
     assert c.spent_since(at(12, 0)) == 6.2
+
+
+def test_attributes_exclude_staff_names() -> None:
+    """Teacher names stay out of state attributes (and so out of history)."""
+    tt = timetable()
+    lesson = tt.day(date(2026, 10, 16)).teaching[0]
+    assert lesson.teacher == "Dr Teacher1"
+    assert "teacher" not in lesson.as_dict()
+    hw = parse_homework(load("homework.json")["result"], date(2026, 10, 16), 30)
+    assert "set_by" not in hw.current[0].as_dict()
+
+
+def test_timetable_coverage_from_a_holiday() -> None:
+    """Requested during half-term, Edulink starts at the next school week.
+
+    Every date from the request to the last day returned is then known.
+    """
+    raw = load("timetable.json")["result"]
+    raw["weeks"] = raw["weeks"][2:]  # only w/c 2 November
+    tt = parse_timetable(raw, date(2026, 10, 28))
+    assert tt.is_school_day(date(2026, 10, 28)) is False
+    assert tt.is_school_day(date(2026, 10, 30)) is False
+    assert tt.is_school_day(date(2026, 11, 2)) is True
+    assert tt.is_school_day(date(2026, 11, 6)) is True
+    # After the last day returned nothing is known, even a weekend.
+    assert tt.is_school_day(date(2026, 11, 7)) is None
+    assert tt.is_school_day(date(2026, 10, 27)) is None
+    assert tt.covers(date(2026, 10, 28))
+    assert not tt.covers(date(2026, 11, 9))
+
+
+def test_timetable_coverage_unknown_without_request_date() -> None:
+    """Without the request date only listed days are known."""
+    tt = timetable()
+    assert tt.is_school_day(date(2026, 10, 16)) is True
+    assert tt.is_school_day(date(2026, 10, 17)) is None
+
+
+def test_parsers_tolerate_malformed_fields() -> None:
+    """Unexpected types are skipped or coerced rather than failing the update."""
+    tt = parse_timetable(
+        {
+            "weeks": [
+                "junk",
+                {"days": [None, {"date": 20261016}]},
+                {
+                    "days": [
+                        {
+                            "date": "2026-10-16",
+                            "name": None,
+                            "periods": [
+                                {
+                                    "id": 1,
+                                    "name": "X:1",
+                                    "start_time": "09:00",
+                                    "end_time": "10:00",
+                                },
+                                {
+                                    "id": 2,
+                                    "name": "X:2",
+                                    "start_time": None,
+                                    "end_time": "11:00",
+                                },
+                                "junk",
+                            ],
+                            "lessons": [
+                                {
+                                    "period_id": "1",
+                                    "teaching_group": "Maths",
+                                    "room": ["R1"],
+                                    "teachers": 42,
+                                },
+                                {
+                                    "period_id": "2",
+                                    "teaching_group": {"subject": "Art"},
+                                },
+                                {"period_id": "3"},
+                                7,
+                            ],
+                        }
+                    ]
+                },
+            ]
+        },
+        date(2026, 10, 16),
+    )
+    day = tt.day(date(2026, 10, 16))
+    assert len(tt.days) == 1
+    assert [
+        (lesson.subject, lesson.room, lesson.teacher) for lesson in day.lessons
+    ] == [("", None, "42")]
+
+    hw = parse_homework(
+        {
+            "homework": {
+                "current": [
+                    {
+                        "id": 1,
+                        "due_date": "2026-10-20",
+                        "completed": "false",
+                        "attachments": "x",
+                    },
+                    {"id": 2, "due_date": None},
+                    {"due_date": "2026-10-20"},
+                    "junk",
+                ],
+                "past": None,
+            }
+        },
+        date(2026, 10, 16),
+        30,
+    )
+    assert [(h.id, h.completed, h.attachments) for h in hw.current] == [("1", False, 0)]
+    assert parse_homework({"homework": []}, date(2026, 10, 16), 30).current == []
+
+    c = parse_catering(
+        {
+            "balance": "11",
+            "transactions": [
+                {
+                    "date": "2026-10-16 12:00:00",
+                    "items": [
+                        {"item": None, "price": -1},
+                        {"item": "X", "price": "2"},
+                        {"item": "Y", "price": True},
+                    ],
+                },
+                {"date": None, "items": []},
+                "junk",
+            ],
+        }
+    )
+    assert c.balance is None
+    assert [(i.name, i.price) for t in c.transactions for i in t.items] == [("", -1.0)]
+    assert parse_catering({"balance": True}).balance is None

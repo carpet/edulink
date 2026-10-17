@@ -9,7 +9,7 @@ Observations come from one parent account at one school on 2026-10-16. Anything 
 Attendance, behaviour and achievement describe a child's school record rather than logistics. That raises privacy questions (Home Assistant history keeps state indefinitely, other household members can see it, and it ends up in backups). It also adds little automation value beyond notifications. If they are added:
 
 - Create them with `entity_registry_enabled_default=False` so nothing is recorded until someone opts in.
-- Keep attributes to aggregates. Do not put staff comments, incident descriptions or staff names into state attributes.
+- Keep attributes to aggregates. Do not put staff comments, incident descriptions or staff names into state attributes; the existing modules follow the same rule (teacher names appear only in calendar event descriptions, which Home Assistant excludes from the recorder).
 - Keep diagnostics to counts, as now (`diagnostics.py`, enforced by `test_diagnostics_have_no_personal_data`).
 - Never add `EduLink.Medical`, `EduLink.Personal` or `EduLink.Documents`. They return health and contact details, and there is no automation use for them.
 
@@ -20,12 +20,12 @@ Use catering as the template: one endpoint, one coordinator, a handful of sensor
 1. **Module id.** Add `MODULE_<NAME>` to `const.py` with the id from the login response's `learner_menu` (for example `attendance`, `behaviour`, `achievement`, `clubs`). Setup only creates a coordinator if the id is in the menu, so schools without the module get no entities.
 2. **API method.** Add a method to `EdulinkClient` in `api.py` that calls `self.call("EduLink.<Method>", {...})`. Always pass `learner_id`, because parent accounts get "You are not authorised" without it. `call()` already handles session expiry and error mapping.
 3. **Model and parser.** In `models.py`, add a dataclass and a `parse_<name>(result)` function, plus any derived values as methods that take an explicit `today`/`now`. Keep this file free of Home Assistant imports and parse defensively (`.get()` with defaults), because fields come and go.
-4. **Coordinator.** Subclass `EdulinkCoordinator[YourModel]` in `coordinator.py` and implement `_fetch(learner_id)`. These modules change slowly; an interval of 6 to 12 hours is enough. Add a field for it on `EdulinkRuntimeData`.
-5. **Setup.** In `__init__.py`, create the coordinator when the module is in `modules`, and add it to the first-refresh loop.
+4. **Coordinator.** Subclass `EdulinkCoordinator[YourModel]` in `coordinator.py` and implement `_fetch(learner_id)` and `_interval(now)`. These modules change slowly; an interval of 6 to 12 hours is enough. The base class already handles per-learner failures (a failing learner keeps its last data, the update only fails if every learner fails) and retries within `RETRY_INTERVAL` after any failure. Override `is_usable` only if entities should stay available on stale data, as the timetable does. Add a field for it on `EdulinkRuntimeData`.
+5. **Setup.** In `__init__.py`, create the coordinator when the module is in `modules`, and add it to the first-refresh loop. If any sensor depends on the date ("this week", "today"), add the coordinator to the midnight rollover in `async_start_clock`.
 6. **Entities.** In `sensor.py`, add a tuple of `EdulinkSensorDescription[YourModel]` and add `(runtime.<name>, YOUR_SENSORS)` to the loop in `async_setup_entry`. Unique ids and devices are handled by `EdulinkEntity`.
 7. **Strings and icons.** Add entity names under `entity.sensor.<translation_key>` in `strings.json`, regenerate `translations/en.json` (copy, with `[%key:...]` references expanded), and add icons in `icons.json`.
 8. **Diagnostics.** Add counts only.
-9. **Tests.** Add a synthetic fixture to `tests/fixtures/`, route it in `FakeEdulink.responses` (`tests/conftest.py`), add parser tests to `test_models.py` and entity tests to `test_init.py`. Extend `test_module_gating`.
+9. **Tests.** Add a synthetic fixture to `tests/fixtures/`, route it in `FakeEdulink.responses` (`tests/conftest.py`; use `learner_responses` for per-child data), add parser tests including malformed fields to `test_models.py`, and entity tests to `test_init.py` or `test_runtime.py`. Extend `test_module_gating` and the two-learner tests.
 10. **Docs.** README entity table and privacy section.
 
 ## Observed endpoints
@@ -125,4 +125,5 @@ Candidate: "next club session" timestamp sensor. The `next_session` format was n
 - Parent accounts must send `learner_id` to every learner method, including `Homework` and `HomeworkDetails`.
 - Sessions slide for about two hours; `EdulinkClient.call` re-logs in once on "You are not logged in", under a lock so parallel coordinators do not log in twice.
 - Times are naive Europe/London strings; parse with `models.SCHOOL_TZ`.
-- Lists can be unordered (timetable lessons) and fields optional (lesson `room`).
+- Lists can be unordered (timetable lessons) and fields optional (lesson `room`). Parsers use `_dict`, `_dicts` and `_str` in `models.py` so a field of an unexpected type is skipped rather than failing the update.
+- A timetable fetched for a holiday date starts at the next school week. `Timetable.covers` and `is_school_day` use the request date to treat every date up to the last day returned as known.

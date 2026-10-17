@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 from .const import CONF_LEARNERS, CONF_USER_ID
 from .coordinator import EdulinkConfigEntry
 
-TO_REDACT = {CONF_PASSWORD, CONF_USERNAME, CONF_USER_ID, CONF_LEARNERS, "title"}
+TO_REDACT = {CONF_PASSWORD, CONF_USERNAME, CONF_USER_ID, CONF_LEARNERS}
 
 
 async def async_get_config_entry_diagnostics(
