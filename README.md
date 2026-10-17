@@ -80,7 +80,7 @@ One device per child. Entities are only created for modules your school has enab
 | `sensor.<child>_last_achievement` | Date of the most recent achievement |
 | `sensor.<child>_behaviour_events_this_year` | Behaviour events since the academic year started |
 | `sensor.<child>_last_behaviour_event` | Date of the most recent behaviour event |
-| `sensor.<child>_last_absence` | Most recent date marked absent in the current or previous month |
+| `sensor.<child>_last_absence` | Most recent date marked absent in the attendance Edulink returns (recent months) |
 
 Only counts, points and dates are exposed. Staff comments, incident details, lesson information, staff names and absence reasons are never read into Home Assistant. There is no attendance percentage, because the meaning of Edulink's monthly attendance counts has not been confirmed.
 
@@ -92,7 +92,7 @@ Only counts, points and dates are exposed. Staff comments, incident details, les
 | `sensor.edulink_one_new_forms` | New forms to complete |
 | `sensor.edulink_one_new_noticeboard_items` | New noticeboard items |
 
-These counts are relative to what has been seen in the Edulink app or website, so opening it is expected to clear them.
+These counts are relative to what has been seen in the Edulink app or website, so reading the items there clears them.
 
 Edulink returns the catering balance in pounds, as a whole number when there are no pence and a decimal otherwise (for example `13.5` for £13.50).
 

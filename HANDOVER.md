@@ -14,7 +14,7 @@ Built, following the rules in "Why they were left out":
 
 The record modules and clubs share `RecordCoordinator` (one call per learner, 12-hour interval); Status has its own `StatusCoordinator`. Parsers accept ISO dates with or without a time, and UK `dd/mm/yyyy`, because these formats were not confirmed against live data. If a field arrives in another format the entity shows unknown rather than failing.
 
-Still not built, pending the [unverified] points below: attendance counts or percentage, "marked absent today", detentions and report cards, behaviour and achievement type names (lookups), `RegisterCodes`. Before the next release, check the new entities against a live account: the `date` format of achievements, behaviour and attendance exceptions, `clubs[].next_session`, and whether reading in the app clears the Status counts.
+Still not built, pending the [unverified] points below: attendance counts or percentage, "marked absent today", detentions and report cards, behaviour and achievement type names (lookups), `RegisterCodes`. Checked on a live account (two parent accounts, one school) on 2026-10-17 with v0.1.4b1: achievement, behaviour and attendance exception dates all parsed; achievement, behaviour, absence, message and noticeboard counts matched the Edulink app; `clubs[].next_session` parses as a local `YYYY-MM-DD HH:MM:SS` time; and reading messages in the app clears `new_messages`. Achievement points this year also matched the app. Attendance absence dates matched the app for the academic year so far; in October that is the two months returned (September and October). Whether Edulink returns every month of the academic year later in the year, or only the current and previous month, is [unverified]; check in November or later.
 
 Observations come from one parent account at one school on 2026-10-16. Anything not seen directly is marked [unverified]. Before building on a schema below, capture a fresh response, because Edulink changes without notice (the TypeScript wrapper's schemas were already out of date).
 
@@ -107,7 +107,7 @@ result.moments.students[]: { id, new_items: int }
 result.session.expires: int            (seconds; resets on every authenticated call)
 ```
 
-Cheap and non-sensitive. Good candidates for "unread messages" and "new forms" sensors, which are useful for prompting a parent to open the app. "New" is relative to what the Edulink account has seen, so reading in the app clears them [unverified].
+Cheap and non-sensitive. Good candidates for "unread messages" and "new forms" sensors, which are useful for prompting a parent to open the app. "New" is relative to what the Edulink account has seen, so reading in the app clears them (confirmed for messages, 2026-10-17).
 
 ### Clubs: `EduLink.Clubs`
 
