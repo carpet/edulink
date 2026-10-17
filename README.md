@@ -1,10 +1,20 @@
 # Edulink One for Home Assistant
 
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories/)
+[![GitHub Release](https://img.shields.io/github/v/release/carpet/edulink)](https://github.com/carpet/edulink/releases)
+[![Validate](https://github.com/carpet/edulink/actions/workflows/validate.yml/badge.svg)](https://github.com/carpet/edulink/actions/workflows/validate.yml)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.10%2B-41BDF5?logo=home-assistant)](https://www.home-assistant.io/)
+[![License](https://img.shields.io/github/license/carpet/edulink)](LICENSE)
+
 Unofficial Home Assistant integration for [Edulink One](https://www.edulinkone.com/), the UK school parent/learner portal. Provides homework, timetable and catering sensors, plus calendars and a homework to-do list, for each child on a parent account (or for a learner's own account).
 
 Not affiliated with or endorsed by Edulink One or its developers. Edulink has no public API: this integration uses the same JSON-RPC calls as the Edulink website and may break if they change.
 
 ## Installation (HACS)
+
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=carpet&repository=edulink&category=integration)
+
+Use the button above, or add the repository manually:
 
 1. HACS, three-dot menu, **Custom repositories**, add `https://github.com/carpet/edulink` as type **Integration**.
 2. Install **Edulink One** and restart Home Assistant.
