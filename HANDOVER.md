@@ -2,7 +2,7 @@
 
 v0.1.0 covered timetable, homework and catering, read-only. This document records what was observed for the other modules and the steps to add one, following the pattern the existing modules use.
 
-## Status of the modules below (unreleased, after v0.1.3)
+## Status of the modules below (v0.1.4)
 
 Built, following the rules in "Why they were left out":
 
