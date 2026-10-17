@@ -75,6 +75,22 @@ async def test_timetable_entities(
     )
     assert state(hass, "sensor.alex_next_school_day").state == "2026-10-19"
     assert state(hass, "sensor.alex_lessons_tomorrow").state == "0"
+    today = state(hass, "sensor.alex_lessons_today")
+    assert today.state == "5"
+    assert [lesson["subject"] for lesson in today.attributes["lessons"]] == [
+        "Mathematics",
+        "English",
+        "Drama",
+        "History",
+        "Physical Education",
+    ]
+    kit = state(hass, "sensor.alex_kit_today")
+    assert kit.state == "1"
+    assert kit.attributes["items"] == ["PE kit"]
+    assert kit.attributes["date"] == "2026-10-16"
+    kit_next = state(hass, "sensor.alex_kit_for_next_school_day")
+    assert kit_next.state == "1"
+    assert kit_next.attributes["date"] == "2026-10-19"
     assert state(hass, "sensor.alex_timetable_week").state == "A"
     assert state(hass, "binary_sensor.alex_school_today").state == "on"
     assert state(hass, "binary_sensor.alex_school_tomorrow").state == "off"
@@ -99,9 +115,22 @@ async def test_timetable_entities(
 
 async def test_homework_entities(hass: HomeAssistant, setup: MockConfigEntry) -> None:
     """Homework sensors, to-do and calendar."""
+    # Default look-ahead of 7 days leaves out homework due in February.
     outstanding = state(hass, "sensor.alex_homework_outstanding")
-    assert outstanding.state == "4"
-    assert len(outstanding.attributes["homework"]) == 4
+    assert outstanding.state == "3"
+    assert [h["due"] for h in outstanding.attributes["homework"]] == [
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-17",
+    ]
+    assert [h["days_until_due"] for h in outstanding.attributes["homework"]] == [
+        0,
+        1,
+        1,
+    ]
+    urgency = state(hass, "sensor.alex_homework_urgency")
+    assert urgency.state == "today"
+    assert urgency.attributes["options"] == ["none", "later", "tomorrow", "today"]
     assert state(hass, "sensor.alex_homework_due_today").state == "1"
     assert state(hass, "sensor.alex_homework_due_tomorrow").state == "2"
     nxt = state(hass, "sensor.alex_next_homework_due")
@@ -135,6 +164,7 @@ async def test_catering_entities(hass: HomeAssistant, setup: MockConfigEntry) ->
     assert state(hass, "binary_sensor.alex_low_catering_balance").state == "off"
     today = state(hass, "sensor.alex_spent_today")
     assert today.state == "2.8"
+    assert today.attributes["items"] == ["Pizza Slice", "Flavoured Water"]
     assert today.attributes["state_class"] == "total"
     assert today.attributes["last_reset"] == "2026-10-16T00:00:00+01:00"
     week = state(hass, "sensor.alex_spent_this_week")

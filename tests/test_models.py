@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+
+import pytest
 
 from custom_components.edulink.models import (
     SCHOOL_TZ,
+    Lesson,
     html_to_text,
+    kit_for,
     parse_catering,
     parse_homework,
+    parse_kit_rules,
     parse_timetable,
 )
 
@@ -83,10 +88,17 @@ def test_homework() -> None:
     """Outstanding, due-on and overdue selections."""
     hw = parse_homework(load("homework.json")["result"], date(2026, 10, 16), 30)
     assert [h.id for h in hw.outstanding()] == ["101", "102", "103", "105"]
+    assert [h.id for h in hw.outstanding(date(2026, 10, 17))] == ["101", "102", "103"]
+    assert [h.id for h in hw.outstanding(date(2026, 10, 16))] == ["101"]
     assert [h.id for h in hw.due_on(date(2026, 10, 17))] == ["102", "103"]
     # Past items older than 30 days are dropped.
     assert {h.id for h in hw.past} == {"90", "91", "92"}
     assert [h.id for h in hw.overdue(date(2026, 10, 16), 14)] == ["90"]
+    # Urgency comes from the soonest outstanding homework within the window.
+    assert hw.urgency(date(2026, 10, 16)) == "today"
+    assert hw.urgency(date(2026, 10, 15)) == "tomorrow"
+    assert hw.urgency(date(2026, 10, 14)) == "later"
+    assert hw.urgency(date(2026, 10, 14), until=date(2026, 10, 15)) == "none"
     assert hw.current[1].attachments == 1
 
 
@@ -242,3 +254,44 @@ def test_parsers_tolerate_malformed_fields() -> None:
     assert c.balance is None
     assert [(i.name, i.price) for t in c.transactions for i in t.items] == [("", -1.0)]
     assert parse_catering({"balance": True}).balance is None
+
+
+def _lesson(subject: str) -> Lesson:
+    start = datetime(2026, 10, 19, 9, tzinfo=SCHOOL_TZ)
+    return Lesson(
+        period="1",
+        start=start,
+        end=start + timedelta(hours=1),
+        subject=subject,
+        group="10A",
+        room=None,
+        teacher=None,
+        is_registration=False,
+    )
+
+
+def test_kit_rules() -> None:
+    """Keywords match whole words, ignoring case; items are not repeated."""
+    rules = parse_kit_rules(
+        "Physical Education = PE kit\n\nPE = PE kit\n P.E. = PE kit \nArt = Art materials"
+    )
+    lessons = [
+        _lesson(s)
+        for s in (
+            "Particle Physics",
+            "physical education",
+            "Art & Design",
+            "PE",
+            "P.E.",
+        )
+    ]
+    assert kit_for(lessons, rules) == ["PE kit", "Art materials"]
+    assert kit_for([_lesson("Particle Physics"), _lesson("Pending")], rules) == []
+    assert parse_kit_rules("") == []
+
+
+@pytest.mark.parametrize("text", ["PE kit", "= PE kit", "PE =", "PE = PE kit\nArt"])
+def test_kit_rules_invalid(text: str) -> None:
+    """A line needs a keyword and an item."""
+    with pytest.raises(ValueError):
+        parse_kit_rules(text)

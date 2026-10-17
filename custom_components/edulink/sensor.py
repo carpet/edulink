@@ -17,10 +17,27 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
-from .const import CURRENCY, OVERDUE_WINDOW_DAYS
+from .const import (
+    CONF_HOMEWORK_DAYS_AHEAD,
+    CONF_KIT_RULES,
+    CURRENCY,
+    DEFAULT_HOMEWORK_DAYS_AHEAD,
+    DEFAULT_KIT_RULES,
+    OVERDUE_WINDOW_DAYS,
+)
 from .coordinator import EdulinkConfigEntry, school_now
 from .entity import EdulinkEntity
-from .models import SCHOOL_TZ, Catering, Homework, HomeworkList, Timetable
+from .models import (
+    SCHOOL_TZ,
+    Catering,
+    Homework,
+    HomeworkList,
+    KitRules,
+    SchoolDay,
+    Timetable,
+    kit_for,
+    parse_kit_rules,
+)
 
 PARALLEL_UPDATES = 0
 
@@ -100,6 +117,13 @@ TIMETABLE_SENSORS: tuple[EdulinkSensorDescription[Timetable], ...] = (
         ),
     ),
     EdulinkSensorDescription(
+        key="lessons_today",
+        translation_key="lessons_today",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda tt, now: len(d.teaching) if (d := tt.day(now.date())) else 0,
+        attrs_fn=lambda tt, now: _day_attrs(tt, now.date()),
+    ),
+    EdulinkSensorDescription(
         key="lessons_tomorrow",
         translation_key="lessons_tomorrow",
         state_class=SensorStateClass.MEASUREMENT,
@@ -115,11 +139,51 @@ TIMETABLE_SENSORS: tuple[EdulinkSensorDescription[Timetable], ...] = (
     ),
 )
 
+
+def _kit_attrs(day: SchoolDay | None, rules: KitRules) -> dict[str, Any]:
+    return {
+        "date": day.date.isoformat() if day else None,
+        "items": kit_for(day.teaching, rules) if day else [],
+    }
+
+
+def _timetable_sensors(
+    rules: KitRules,
+) -> tuple[EdulinkSensorDescription[Timetable], ...]:
+    """Timetable sensors, with kit reminders from the kit rules option."""
+
+    def today(tt: Timetable, now: datetime) -> SchoolDay | None:
+        return tt.day(now.date())
+
+    def next_day(tt: Timetable, now: datetime) -> SchoolDay | None:
+        return tt.next_school_day(now.date())
+
+    return (
+        *TIMETABLE_SENSORS,
+        EdulinkSensorDescription(
+            key="kit_today",
+            translation_key="kit_today",
+            value_fn=lambda tt, now: len(_kit_attrs(today(tt, now), rules)["items"]),
+            attrs_fn=lambda tt, now: _kit_attrs(today(tt, now), rules),
+        ),
+        EdulinkSensorDescription(
+            key="kit_next_school_day",
+            translation_key="kit_next_school_day",
+            value_fn=lambda tt, now: len(_kit_attrs(next_day(tt, now), rules)["items"]),
+            attrs_fn=lambda tt, now: _kit_attrs(next_day(tt, now), rules),
+        ),
+    )
+
+
 # ----------------------------------------------------------------- homework
 
 
-def _homework_list(items: list[Homework]) -> dict[str, Any]:
-    return {"homework": [hw.as_dict() for hw in items]}
+def _homework_list(items: list[Homework], today: date) -> dict[str, Any]:
+    return {
+        "homework": [
+            {**hw.as_dict(), "days_until_due": (hw.due - today).days} for hw in items
+        ]
+    }
 
 
 def _next_due(hw: HomeworkList) -> Homework | None:
@@ -134,27 +198,49 @@ def _next_due_attrs(hw: HomeworkList, _now: datetime) -> dict[str, Any] | None:
     return {**item.as_dict(), "description": item.description}
 
 
+def _homework_sensors(
+    days_ahead: int,
+) -> tuple[EdulinkSensorDescription[HomeworkList], ...]:
+    """Homework sensors. Outstanding only counts homework due within days_ahead."""
+
+    def until(now: datetime) -> date:
+        return now.date() + timedelta(days=days_ahead)
+
+    return (
+        EdulinkSensorDescription(
+            key="homework_outstanding",
+            translation_key="homework_outstanding",
+            state_class=SensorStateClass.MEASUREMENT,
+            value_fn=lambda hw, now: len(hw.outstanding(until(now))),
+            attrs_fn=lambda hw, now: _homework_list(
+                hw.outstanding(until(now)), now.date()
+            ),
+        ),
+        EdulinkSensorDescription(
+            key="homework_urgency",
+            translation_key="homework_urgency",
+            device_class=SensorDeviceClass.ENUM,
+            options=["none", "later", "tomorrow", "today"],
+            value_fn=lambda hw, now: hw.urgency(now.date(), until(now)),
+        ),
+        *HOMEWORK_SENSORS,
+    )
+
+
 HOMEWORK_SENSORS: tuple[EdulinkSensorDescription[HomeworkList], ...] = (
-    EdulinkSensorDescription(
-        key="homework_outstanding",
-        translation_key="homework_outstanding",
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda hw, _now: len(hw.outstanding()),
-        attrs_fn=lambda hw, _now: _homework_list(hw.outstanding()),
-    ),
     EdulinkSensorDescription(
         key="homework_due_today",
         translation_key="homework_due_today",
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda hw, now: len(hw.due_on(now.date())),
-        attrs_fn=lambda hw, now: _homework_list(hw.due_on(now.date())),
+        attrs_fn=lambda hw, now: _homework_list(hw.due_on(now.date()), now.date()),
     ),
     EdulinkSensorDescription(
         key="homework_due_tomorrow",
         translation_key="homework_due_tomorrow",
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda hw, now: len(hw.due_on(_tomorrow(now))),
-        attrs_fn=lambda hw, now: _homework_list(hw.due_on(_tomorrow(now))),
+        attrs_fn=lambda hw, now: _homework_list(hw.due_on(_tomorrow(now)), now.date()),
     ),
     EdulinkSensorDescription(
         key="next_homework_due",
@@ -170,7 +256,7 @@ HOMEWORK_SENSORS: tuple[EdulinkSensorDescription[HomeworkList], ...] = (
         entity_registry_enabled_default=False,
         value_fn=lambda hw, now: len(hw.overdue(now.date(), OVERDUE_WINDOW_DAYS)),
         attrs_fn=lambda hw, now: _homework_list(
-            hw.overdue(now.date(), OVERDUE_WINDOW_DAYS)
+            hw.overdue(now.date(), OVERDUE_WINDOW_DAYS), now.date()
         ),
     ),
 )
@@ -196,7 +282,12 @@ def _last_top_up_attrs(c: Catering, _now: datetime) -> dict[str, Any] | None:
 
 def _today_items(c: Catering, now: datetime) -> dict[str, Any]:
     since = _start_of_day(now)
-    return {"purchases": [t.as_dict() for t in c.purchases if t.when >= since]}
+    today = [t for t in c.purchases if t.when >= since]
+    return {
+        "purchases": [t.as_dict() for t in today],
+        # Till item names are upper case.
+        "items": [item.name.title() for t in reversed(today) for item in t.items],
+    }
 
 
 CATERING_SENSORS: tuple[EdulinkSensorDescription[Catering], ...] = (
@@ -258,8 +349,22 @@ async def async_setup_entry(
     runtime = entry.runtime_data
     entities: list[EdulinkSensor[Any]] = []
     for coordinator, descriptions in (
-        (runtime.timetable, TIMETABLE_SENSORS),
-        (runtime.homework, HOMEWORK_SENSORS),
+        (
+            runtime.timetable,
+            _timetable_sensors(
+                parse_kit_rules(entry.options.get(CONF_KIT_RULES, DEFAULT_KIT_RULES))
+            ),
+        ),
+        (
+            runtime.homework,
+            _homework_sensors(
+                int(
+                    entry.options.get(
+                        CONF_HOMEWORK_DAYS_AHEAD, DEFAULT_HOMEWORK_DAYS_AHEAD
+                    )
+                )
+            ),
+        ),
         (runtime.catering, CATERING_SENSORS),
     ):
         if coordinator is None:

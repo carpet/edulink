@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 from unittest.mock import patch
 
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -13,13 +14,15 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.edulink.const import (
     CONF_CATERING_INTERVAL,
+    CONF_HOMEWORK_DAYS_AHEAD,
     CONF_HOMEWORK_INTERVAL,
+    CONF_KIT_RULES,
     CONF_LEARNERS,
     CONF_LOW_BALANCE,
     DOMAIN,
 )
 
-from .conftest import SERVER, FakeEdulink
+from .conftest import NOW, SERVER, FakeEdulink
 
 CREDS = {"username": "p_example", "password": "secret"}
 
@@ -174,9 +177,13 @@ async def test_reauth_wrong_account(
 
 
 async def test_options(
-    hass: HomeAssistant, fake: FakeEdulink, entry: MockConfigEntry
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
 ) -> None:
-    """Options are stored."""
+    """Options are stored and applied."""
+    freezer.move_to(NOW)
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
@@ -184,13 +191,46 @@ async def test_options(
     result = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        {CONF_LOW_BALANCE: 20, CONF_HOMEWORK_INTERVAL: 60, CONF_CATERING_INTERVAL: 30},
+        {
+            CONF_LOW_BALANCE: 20,
+            CONF_HOMEWORK_INTERVAL: 60,
+            CONF_HOMEWORK_DAYS_AHEAD: 365,
+            CONF_KIT_RULES: "Drama = Script",
+            CONF_CATERING_INTERVAL: 30,
+        },
     )
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_LOW_BALANCE] == 20
-    # Reloaded with the new threshold: £11 is now low.
+    # Reloaded with the new options: £11 is now low, and February homework counts.
     assert hass.states.get("binary_sensor.alex_low_catering_balance").state == "on"
+    assert hass.states.get("sensor.alex_homework_outstanding").state == "4"
+    # Friday has Drama; the default PE rule is replaced.
+    assert hass.states.get("sensor.alex_kit_today").attributes["items"] == ["Script"]
+
+
+async def test_options_invalid_kit_rules(
+    hass: HomeAssistant, fake: FakeEdulink, entry: MockConfigEntry
+) -> None:
+    """A kit rule without an item is rejected and the form is shown again."""
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_LOW_BALANCE: 5,
+            CONF_HOMEWORK_INTERVAL: 30,
+            CONF_HOMEWORK_DAYS_AHEAD: 7,
+            CONF_KIT_RULES: "Physical Education",
+            CONF_CATERING_INTERVAL: 15,
+        },
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {CONF_KIT_RULES: "invalid_kit_rules"}
+    assert entry.options == {}
 
 
 async def test_school_details_unexpected_error(

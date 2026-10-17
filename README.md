@@ -37,8 +37,9 @@ One device per child. Entities are only created for modules your school has enab
 | `sensor.<child>_next_lesson` | Next lesson's subject (looks ahead across days). Same attributes |
 | `sensor.<child>_school_day_start` / `_school_day_end` | Today's first/last period, or the next school day's once today has finished |
 | `sensor.<child>_next_school_day` | Next date after today with a timetable. Attribute `lessons` |
-| `sensor.<child>_lessons_tomorrow` | Number of lessons tomorrow (0 at weekends and holidays). Attribute `lessons` |
+| `sensor.<child>_lessons_today` / `_lessons_tomorrow` | Number of lessons that day (0 at weekends and holidays). Attribute `lessons` |
 | `sensor.<child>_timetable_week` | Week letter for schools on a multi-week cycle (A/B), for the current or next school day |
+| `sensor.<child>_kit_today` / `_kit_for_next_school_day` | Number of kit reminders for today's lessons / the next school day's, from the kit rules in options. Attributes: `items` (for example `PE kit`), `date` |
 | `binary_sensor.<child>_school_today` / `_school_tomorrow` | On if there is a timetable that day. Holidays are detected automatically |
 | `calendar.<child>_timetable` | One event per lesson |
 
@@ -46,7 +47,8 @@ One device per child. Entities are only created for modules your school has enab
 
 | Entity | Description |
 |---|---|
-| `sensor.<child>_homework_outstanding` | Current homework not marked complete. Attribute `homework` lists them |
+| `sensor.<child>_homework_outstanding` | Homework not marked complete and due within the next 7 days (set in options). Attribute `homework` lists them, each with `days_until_due` |
+| `sensor.<child>_homework_urgency` | `today`, `tomorrow`, `later` or `none`, from the soonest outstanding homework. Handy for colouring cards |
 | `sensor.<child>_homework_due_today` / `_due_tomorrow` | Outstanding homework due that day |
 | `sensor.<child>_next_homework_due` | Earliest due date, with subject, task, status and description |
 | `sensor.<child>_overdue_homework` | Disabled by default. Incomplete homework due in the last 14 days. Many schools do not track submission in Edulink, so this can be noisy |
@@ -60,14 +62,24 @@ One device per child. Entities are only created for modules your school has enab
 | `sensor.<child>_catering_balance` | Balance in GBP |
 | `binary_sensor.<child>_low_catering_balance` | On below the threshold set in options (default £5) |
 | `sensor.<child>_last_purchase` | Time of last purchase. Attributes: items, total |
-| `sensor.<child>_spent_today` / `_spent_this_week` | Spend since midnight / Monday. Recorded as long-term statistics (resetting daily / weekly), so a statistics graph can chart spend per day or week |
+| `sensor.<child>_spent_today` / `_spent_this_week` | Spend since midnight / Monday. Recorded as long-term statistics (resetting daily / weekly), so a statistics graph can chart spend per day or week. Spent today has attributes `purchases` and `items` (item names bought today) |
 | `sensor.<child>_last_top_up` | Amount of the last top-up in GBP. Attribute `time` |
 
 Edulink returns the catering balance in pounds, as a whole number when there are no pence and a decimal otherwise (for example `13.5` for £13.50).
 
 ## Options
 
-Low-balance threshold, homework update interval and daytime catering update interval.
+- Low-balance threshold (default £5).
+- Homework update interval (default 30 minutes).
+- Outstanding homework look-ahead: how many days ahead the outstanding homework and urgency sensors look (default 7).
+- Kit reminders: one `subject keyword = item` rule per line. A keyword matches whole words in a lesson's subject, ignoring case. The defaults are:
+  ```
+  Physical Education = PE kit
+  PE = PE kit
+  Food = Food Tech ingredients
+  Art = Art materials
+  ```
+- Daytime catering update interval (default 15 minutes).
 
 ## Example automations
 
@@ -90,20 +102,24 @@ automation:
             {{ state_attr('sensor.alex_homework_due_tomorrow', 'homework')
                | map(attribute='subject') | join(', ') }}
 
-  # PE kit reminder the evening before
-  - alias: PE kit
+  # Kit reminder the evening before (PE kit, ingredients and so on)
+  - alias: Kit for tomorrow
     triggers:
       - trigger: time
         at: "19:30:00"
     conditions:
-      - condition: template
-        value_template: >
-          {{ state_attr('sensor.alex_lessons_tomorrow', 'lessons') | default([], true)
-             | selectattr('subject', 'search', 'Physical Education') | list | count > 0 }}
+      - condition: state
+        entity_id: binary_sensor.alex_school_tomorrow
+        state: "on"
+      - condition: numeric_state
+        entity_id: sensor.alex_kit_for_next_school_day
+        above: 0
     actions:
       - action: notify.mobile_app_phone
         data:
-          message: PE tomorrow, pack the kit.
+          message: >
+            Pack for tomorrow:
+            {{ state_attr('sensor.alex_kit_for_next_school_day', 'items') | join(', ') }}
 
   # Low dinner money
   - alias: Low catering balance

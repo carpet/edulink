@@ -109,7 +109,7 @@ Device: `<Child forename>` (model "Edulink One", manufacturer = school name, ent
 
 | Entity | Type | State | Key attributes |
 |---|---|---|---|
-| Homework outstanding | sensor (count) | current items not completed | list of `{subject, activity, due_date, set_by, status}` |
+| Homework outstanding | sensor (count) | current items not completed, due within the look-ahead option (default 7 days) | list of `{subject, activity, due_date, set_by, status}` |
 | Homework due today | sensor (count) | | titles |
 | Homework due tomorrow | sensor (count) | | titles, for "evening reminder" automations |
 | Next homework due | sensor (`device_class: date`) | earliest due date of outstanding | subject, activity, set_by, description (text) |
@@ -246,13 +246,14 @@ No external requirements (aiohttp ships with HA).
 3. Repository `carpet/edulink` on GitHub.
 4. Attendance, behaviour and achievement deferred. See `HANDOVER.md` for how to add them.
 
-## 6. As built (v0.1.1)
+## 6. As built (v0.1.3)
 
 Differences from sections 2 to 4:
 
 - No `edulink.refresh` service or `services.yaml`; `homeassistant.update_entity` covers it.
 - No reconfigure flow and no way to change the selected children without re-adding the entry (deferred).
-- Options are the low-balance threshold and the homework and catering intervals only. No module include/exclude or overdue-window option; the overdue window is fixed at 14 days.
+- Options are the low-balance threshold, the homework and catering intervals, the outstanding homework look-ahead (default 7 days) and kit reminder rules. No module include/exclude or overdue-window option; the overdue window is fixed at 14 days.
+- Added in v0.1.2 and v0.1.3: last top-up reports the amount in GBP (time as an attribute); spend sensors are totals with long-term statistics; lessons today; kit today and kit for next school day; homework urgency (enum); `days_until_due` on homework lists; a flat `items` list on spent today.
 - Homework polling does not call `EduLink.Status`.
 - Device manufacturer is "Edulink One" and the model is the school name.
 - Current lesson attributes are room, period, start and end. Teacher names and homework `set_by` are kept out of sensor attributes and appear only in calendar event descriptions.

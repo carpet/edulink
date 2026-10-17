@@ -15,9 +15,16 @@
       "school_day_start": { "default": "mdi:bell-ring-outline" },
       "school_day_end": { "default": "mdi:bell-outline" },
       "next_school_day": { "default": "mdi:calendar-arrow-right" },
+      "lessons_today": { "default": "mdi:timetable" },
       "lessons_tomorrow": { "default": "mdi:bag-personal-outline" },
       "timetable_week": { "default": "mdi:calendar-week" },
+      "kit_today": { "default": "mdi:bag-checked" },
+      "kit_next_school_day": { "default": "mdi:bag-personal" },
       "homework_outstanding": { "default": "mdi:book-open-variant" },
+      "homework_urgency": {
+        "default": "mdi:book-check",
+        "state": { "later": "mdi:book-clock-outline", "tomorrow": "mdi:book-clock", "today": "mdi:book-alert" }
+      },
       "homework_due_today": { "default": "mdi:book-alert" },
       "homework_due_tomorrow": { "default": "mdi:book-clock" },
       "next_homework_due": { "default": "mdi:calendar-clock" },

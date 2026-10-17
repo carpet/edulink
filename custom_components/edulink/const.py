@@ -17,10 +17,20 @@ CONF_LEARNERS: Final = "learners"
 CONF_LOW_BALANCE: Final = "low_balance_threshold"
 CONF_HOMEWORK_INTERVAL: Final = "homework_interval"
 CONF_CATERING_INTERVAL: Final = "catering_interval"
+CONF_HOMEWORK_DAYS_AHEAD: Final = "homework_days_ahead"
+CONF_KIT_RULES: Final = "kit_rules"
 
 DEFAULT_LOW_BALANCE: Final = 5.0
 DEFAULT_HOMEWORK_INTERVAL: Final = 30  # minutes
 DEFAULT_CATERING_INTERVAL: Final = 15  # minutes
+DEFAULT_HOMEWORK_DAYS_AHEAD: Final = 7
+# "subject keyword = item" per line.
+DEFAULT_KIT_RULES: Final = (
+    "Physical Education = PE kit\n"
+    "PE = PE kit\n"
+    "Food = Food Tech ingredients\n"
+    "Art = Art materials"
+)
 
 TIMETABLE_INTERVAL: Final = timedelta(hours=6)
 OFF_HOURS_INTERVAL: Final = timedelta(hours=2)

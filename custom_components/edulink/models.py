@@ -202,6 +202,38 @@ class Timetable:
         return None
 
 
+type KitRules = list[tuple[re.Pattern[str], str]]
+
+
+def parse_kit_rules(text: str) -> KitRules:
+    """Parse "subject keyword = item" lines. Blank lines are ignored.
+
+    A keyword matches whole words in the subject, ignoring case, so "Art"
+    matches "Art & Design" but not "Particle Physics".
+    Raises ValueError on a line without a keyword and an item.
+    """
+    rules: KitRules = []
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        keyword, sep, item = (part.strip() for part in line.partition("="))
+        if not (sep and keyword and item):
+            raise ValueError(line)
+        pattern = re.compile(rf"(?<!\w){re.escape(keyword)}(?!\w)", re.IGNORECASE)
+        rules.append((pattern, item))
+    return rules
+
+
+def kit_for(lessons: list[Lesson], rules: KitRules) -> list[str]:
+    """Items needed for a day's lessons, in lesson order, without repeats."""
+    items: list[str] = []
+    for lesson in lessons:
+        for pattern, item in rules:
+            if item not in items and pattern.search(lesson.subject):
+                items.append(item)
+    return items
+
+
 def parse_timetable(result: dict[str, Any], requested: date | None = None) -> Timetable:
     """Parse an EduLink.Timetable result fetched for the requested date."""
     timetable = Timetable(requested=requested)
@@ -290,11 +322,31 @@ class HomeworkList:
     current: list[Homework] = field(default_factory=list)
     past: list[Homework] = field(default_factory=list)
 
-    def outstanding(self) -> list[Homework]:
-        """Current homework not marked complete, soonest first."""
+    def outstanding(self, until: date | None = None) -> list[Homework]:
+        """Current homework not marked complete, soonest first.
+
+        If until is given, only homework due on or before that date.
+        """
         return sorted(
-            (hw for hw in self.current if not hw.completed), key=lambda hw: hw.due
+            (
+                hw
+                for hw in self.current
+                if not hw.completed and (until is None or hw.due <= until)
+            ),
+            key=lambda hw: hw.due,
         )
+
+    def urgency(self, today: date, until: date | None = None) -> str:
+        """today, tomorrow, later or none, from the soonest outstanding due date."""
+        outstanding = self.outstanding(until)
+        if not outstanding:
+            return "none"
+        soonest = outstanding[0].due
+        if soonest <= today:
+            return "today"
+        if soonest == today + timedelta(days=1):
+            return "tomorrow"
+        return "later"
 
     def due_on(self, day: date) -> list[Homework]:
         """Outstanding homework due on a date."""

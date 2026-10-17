@@ -53,13 +53,20 @@
         "data": {
           "low_balance_threshold": "Low catering balance threshold",
           "homework_interval": "Homework update interval",
+          "homework_days_ahead": "Outstanding homework look-ahead",
+          "kit_rules": "Kit reminders",
           "catering_interval": "Catering update interval during the school day"
         },
         "data_description": {
           "catering_interval": "Outside 07:30 to 16:00 on weekdays catering updates every 2 hours.",
-          "homework_interval": "Between 22:00 and 06:00 homework updates every 2 hours."
+          "homework_interval": "Between 22:00 and 06:00 homework updates every 2 hours.",
+          "homework_days_ahead": "The outstanding homework sensor only counts homework due within this many days. The due today, due tomorrow and next due sensors, the to-do list and the calendar include all homework.",
+          "kit_rules": "One rule per line, as subject keyword = item, for example Physical Education = PE kit. A keyword matches whole words in the lesson's subject, ignoring case."
         }
       }
+    },
+    "error": {
+      "invalid_kit_rules": "Each line needs a subject keyword and an item, separated by ="
     }
   },
   "entity": {
@@ -98,14 +105,32 @@
       "next_school_day": {
         "name": "Next school day"
       },
+      "lessons_today": {
+        "name": "Lessons today"
+      },
       "lessons_tomorrow": {
         "name": "Lessons tomorrow"
       },
       "timetable_week": {
         "name": "Timetable week"
       },
+      "kit_today": {
+        "name": "Kit today"
+      },
+      "kit_next_school_day": {
+        "name": "Kit for next school day"
+      },
       "homework_outstanding": {
         "name": "Homework outstanding"
+      },
+      "homework_urgency": {
+        "name": "Homework urgency",
+        "state": {
+          "none": "Nothing outstanding",
+          "later": "Later",
+          "tomorrow": "Due tomorrow",
+          "today": "Due today"
+        }
       },
       "homework_due_today": {
         "name": "Homework due today"

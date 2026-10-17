@@ -40,7 +40,9 @@ from .api import (
 from .const import (
     CONF_CATERING_INTERVAL,
     CONF_ESTABLISHMENT_ID,
+    CONF_HOMEWORK_DAYS_AHEAD,
     CONF_HOMEWORK_INTERVAL,
+    CONF_KIT_RULES,
     CONF_LEARNERS,
     CONF_LOW_BALANCE,
     CONF_SCHOOL_CODE,
@@ -48,11 +50,14 @@ from .const import (
     CONF_SERVER,
     CONF_USER_ID,
     DEFAULT_CATERING_INTERVAL,
+    DEFAULT_HOMEWORK_DAYS_AHEAD,
     DEFAULT_HOMEWORK_INTERVAL,
+    DEFAULT_KIT_RULES,
     DEFAULT_LOW_BALANCE,
     DOMAIN,
 )
 from .coordinator import EdulinkConfigEntry
+from .models import parse_kit_rules
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -248,14 +253,20 @@ class EdulinkConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class EdulinkOptionsFlow(OptionsFlowWithReload):
-    """Polling intervals and the low-balance threshold."""
+    """Polling intervals, thresholds and kit reminders."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options."""
+        errors: dict[str, str] = {}
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
+            try:
+                parse_kit_rules(user_input.get(CONF_KIT_RULES, ""))
+            except ValueError:
+                errors[CONF_KIT_RULES] = "invalid_kit_rules"
+            else:
+                return self.async_create_entry(data=user_input)
 
         schema = vol.Schema(
             {
@@ -282,6 +293,20 @@ class EdulinkOptionsFlow(OptionsFlowWithReload):
                     )
                 ),
                 vol.Required(
+                    CONF_HOMEWORK_DAYS_AHEAD, default=DEFAULT_HOMEWORK_DAYS_AHEAD
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=1,
+                        max=365,
+                        step=1,
+                        unit_of_measurement="days",
+                        mode=NumberSelectorMode.BOX,
+                    )
+                ),
+                vol.Optional(CONF_KIT_RULES, default=DEFAULT_KIT_RULES): TextSelector(
+                    TextSelectorConfig(multiline=True)
+                ),
+                vol.Required(
                     CONF_CATERING_INTERVAL, default=DEFAULT_CATERING_INTERVAL
                 ): NumberSelector(
                     NumberSelectorConfig(
@@ -297,6 +322,7 @@ class EdulinkOptionsFlow(OptionsFlowWithReload):
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
-                schema, self.config_entry.options
+                schema, user_input or self.config_entry.options
             ),
+            errors=errors,
         )
