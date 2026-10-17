@@ -13,6 +13,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.edulink.const import (
+    CONF_ACADEMIC_YEAR_START,
     CONF_CATERING_INTERVAL,
     CONF_HOMEWORK_DAYS_AHEAD,
     CONF_HOMEWORK_INTERVAL,
@@ -176,6 +177,7 @@ async def test_reauth_wrong_account(
     assert result["reason"] == "wrong_account"
 
 
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
 async def test_options(
     hass: HomeAssistant,
     fake: FakeEdulink,
@@ -197,6 +199,7 @@ async def test_options(
             CONF_HOMEWORK_DAYS_AHEAD: 365,
             CONF_KIT_RULES: "Drama = Script",
             CONF_CATERING_INTERVAL: 30,
+            CONF_ACADEMIC_YEAR_START: 10,
         },
     )
     await hass.async_block_till_done()
@@ -207,6 +210,10 @@ async def test_options(
     assert hass.states.get("sensor.alex_homework_outstanding").state == "4"
     # Friday has Drama; the default PE rule is replaced.
     assert hass.states.get("sensor.alex_kit_today").attributes["items"] == ["Script"]
+    # A year starting in October leaves out September's 5 points.
+    points = hass.states.get("sensor.alex_achievement_points_this_year")
+    assert points.state == "5"
+    assert points.attributes["last_reset"] == "2026-10-01T00:00:00+01:00"
 
 
 async def test_options_invalid_kit_rules(

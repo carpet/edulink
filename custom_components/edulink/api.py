@@ -296,6 +296,32 @@ class EdulinkClient:
         """Catering balance and recent transactions."""
         return await self.call("EduLink.Catering", {"learner_id": learner_id})
 
+    async def achievement(self, learner_id: str) -> dict[str, Any]:
+        """Achievements, with points."""
+        return await self.call("EduLink.Achievement", {"learner_id": learner_id})
+
+    async def behaviour(self, learner_id: str) -> dict[str, Any]:
+        """Behaviour events."""
+        return await self.call(
+            "EduLink.Behaviour", {"format": 2, "learner_id": learner_id}
+        )
+
+    async def attendance(self, learner_id: str) -> dict[str, Any]:
+        """Statutory attendance for the current and previous month."""
+        return await self.call(
+            "EduLink.Attendance", {"format": 3, "learner_id": learner_id}
+        )
+
+    async def clubs(self, learner_id: str) -> dict[str, Any]:
+        """Clubs the learner belongs to."""
+        return await self.call(
+            "EduLink.Clubs", {"member": True, "learner_id": learner_id}
+        )
+
+    async def status(self) -> dict[str, Any]:
+        """Account-wide unread counts. Takes no learner."""
+        return await self.call("EduLink.Status", {"last_visible": 0})
+
 
 def _learner(raw: dict[str, Any]) -> Learner:
     return Learner(

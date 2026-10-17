@@ -7,8 +7,8 @@ from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .api import Learner
-from .const import DOMAIN
-from .coordinator import EdulinkCoordinator
+from .const import CONF_USER_ID, DOMAIN
+from .coordinator import EdulinkCoordinator, StatusCoordinator
 
 
 class EdulinkEntity[T](CoordinatorEntity[EdulinkCoordinator[T]]):
@@ -47,3 +47,26 @@ class EdulinkEntity[T](CoordinatorEntity[EdulinkCoordinator[T]]):
     def learner_data(self) -> T:
         """This learner's slice of the coordinator data."""
         return self.coordinator.data[self.learner.id]
+
+
+class EdulinkAccountEntity(CoordinatorEntity[StatusCoordinator]):
+    """An entity for the Edulink account as a whole, rather than one learner."""
+
+    _attr_has_entity_name = True
+
+    def __init__(
+        self, coordinator: StatusCoordinator, description: EntityDescription
+    ) -> None:
+        """Initialise the entity."""
+        super().__init__(coordinator)
+        self.entity_description = description
+        entry = coordinator.config_entry
+        account = f"{entry.runtime_data.establishment_id}_{entry.data[CONF_USER_ID]}"
+        self._attr_unique_id = f"{account}_{description.key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, account)},
+            name="Edulink One",
+            manufacturer="Edulink One",
+            model=entry.runtime_data.school_name,
+            entry_type=DeviceEntryType.SERVICE,
+        )

@@ -1,0 +1,24 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "success": true,
+  "new_messages": 2,
+  "new_forms": 1,
+  "noticeboard": {
+   "new_items": 3,
+   "new_snippets": 0
+  },
+  "moments": {
+   "students": [
+    {
+     "id": "7001",
+     "new_items": 0
+    }
+   ]
+  },
+  "session": {
+   "expires": 7200
+  }
+ },
+ "id": "1"
+}

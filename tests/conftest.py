@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any
+from unittest.mock import PropertyMock, patch
 
 import aiohttp
 import pytest
@@ -49,6 +50,17 @@ async def uk_time_zone(hass):
     await hass.config.async_set_time_zone("Europe/London")
 
 
+@pytest.fixture
+def entity_registry_enabled_by_default():
+    """Create entities that are disabled by default as enabled."""
+    with patch(
+        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
+        new_callable=PropertyMock,
+        return_value=True,
+    ):
+        yield
+
+
 class FakeEdulink:
     """Routes JSON-RPC calls to fixtures, with switchable failures."""
 
@@ -62,6 +74,11 @@ class FakeEdulink:
             "EduLink.Homework": load("homework.json"),
             "EduLink.HomeworkDetails": load("homework_details.json"),
             "EduLink.Catering": load("catering.json"),
+            "EduLink.Achievement": load("achievement.json"),
+            "EduLink.Behaviour": load("behaviour.json"),
+            "EduLink.Attendance": load("attendance.json"),
+            "EduLink.Clubs": load("clubs.json"),
+            "EduLink.Status": load("status.json"),
         }
         # Per-learner overrides, keyed by (method, learner_id).
         self.learner_responses: dict[tuple[str, str], dict[str, Any]] = {}

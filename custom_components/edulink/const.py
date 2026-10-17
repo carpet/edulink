@@ -19,11 +19,14 @@ CONF_HOMEWORK_INTERVAL: Final = "homework_interval"
 CONF_CATERING_INTERVAL: Final = "catering_interval"
 CONF_HOMEWORK_DAYS_AHEAD: Final = "homework_days_ahead"
 CONF_KIT_RULES: Final = "kit_rules"
+CONF_ACADEMIC_YEAR_START: Final = "academic_year_start_month"
 
 DEFAULT_LOW_BALANCE: Final = 5.0
 DEFAULT_HOMEWORK_INTERVAL: Final = 30  # minutes
 DEFAULT_CATERING_INTERVAL: Final = 15  # minutes
 DEFAULT_HOMEWORK_DAYS_AHEAD: Final = 7
+# Edulink has no term or year dates; schools in England start in September.
+DEFAULT_ACADEMIC_YEAR_START: Final = 9
 # "subject keyword = item" per line.
 DEFAULT_KIT_RULES: Final = (
     "Physical Education = PE kit\n"
@@ -33,6 +36,9 @@ DEFAULT_KIT_RULES: Final = (
 )
 
 TIMETABLE_INTERVAL: Final = timedelta(hours=6)
+# Achievement, behaviour, attendance and clubs change slowly.
+RECORD_INTERVAL: Final = timedelta(hours=12)
+STATUS_INTERVAL: Final = timedelta(minutes=30)
 OFF_HOURS_INTERVAL: Final = timedelta(hours=2)
 # Retry delay after a failed poll, so a blip does not cost a full interval.
 RETRY_INTERVAL: Final = timedelta(minutes=15)
@@ -46,5 +52,9 @@ PAST_HOMEWORK_DAYS: Final = 30
 MODULE_TIMETABLE: Final = "timetable"
 MODULE_HOMEWORK: Final = "homework"
 MODULE_CATERING: Final = "catering"
+MODULE_ACHIEVEMENT: Final = "achievement"
+MODULE_BEHAVIOUR: Final = "behaviour"
+MODULE_ATTENDANCE: Final = "attendance"
+MODULE_CLUBS: Final = "clubs"
 
 CURRENCY: Final = "GBP"

@@ -55,13 +55,15 @@
           "homework_interval": "Homework update interval",
           "homework_days_ahead": "Outstanding homework look-ahead",
           "kit_rules": "Kit reminders",
-          "catering_interval": "Catering update interval during the school day"
+          "catering_interval": "Catering update interval during the school day",
+          "academic_year_start_month": "Academic year starts in month"
         },
         "data_description": {
           "catering_interval": "Outside 07:30 to 16:00 on weekdays catering updates every 2 hours.",
           "homework_interval": "Between 22:00 and 06:00 homework updates every 2 hours.",
           "homework_days_ahead": "The outstanding homework sensor only counts homework due within this many days. The due today, due tomorrow and next due sensors, the to-do list and the calendar include all homework.",
-          "kit_rules": "One rule per line, as subject keyword = item, for example Physical Education = PE kit. A keyword matches whole words in the lesson's subject, ignoring case."
+          "kit_rules": "One rule per line, as subject keyword = item, for example Physical Education = PE kit. A keyword matches whole words in the lesson's subject, ignoring case.",
+          "academic_year_start_month": "Achievement points and behaviour events this year count from the 1st of this month (9 is September)."
         }
       }
     },
@@ -158,6 +160,36 @@
       },
       "last_top_up": {
         "name": "Last top-up"
+      },
+      "achievement_points": {
+        "name": "Achievement points this year"
+      },
+      "achievements_this_week": {
+        "name": "Achievements this week"
+      },
+      "last_achievement": {
+        "name": "Last achievement"
+      },
+      "behaviour_events": {
+        "name": "Behaviour events this year"
+      },
+      "last_behaviour_event": {
+        "name": "Last behaviour event"
+      },
+      "last_absence": {
+        "name": "Last absence"
+      },
+      "next_club_session": {
+        "name": "Next club session"
+      },
+      "new_messages": {
+        "name": "New messages"
+      },
+      "new_forms": {
+        "name": "New forms"
+      },
+      "new_noticeboard_items": {
+        "name": "New noticeboard items"
       }
     },
     "todo": {

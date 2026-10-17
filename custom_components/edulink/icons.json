@@ -33,7 +33,17 @@
       "last_purchase": { "default": "mdi:food" },
       "spent_today": { "default": "mdi:cash-minus" },
       "spent_this_week": { "default": "mdi:cash-multiple" },
-      "last_top_up": { "default": "mdi:cash-plus" }
+      "last_top_up": { "default": "mdi:cash-plus" },
+      "achievement_points": { "default": "mdi:star-circle" },
+      "achievements_this_week": { "default": "mdi:star-plus" },
+      "last_achievement": { "default": "mdi:star-check" },
+      "behaviour_events": { "default": "mdi:alert-circle-outline" },
+      "last_behaviour_event": { "default": "mdi:calendar-alert" },
+      "last_absence": { "default": "mdi:account-cancel-outline" },
+      "next_club_session": { "default": "mdi:account-group" },
+      "new_messages": { "default": "mdi:email-outline" },
+      "new_forms": { "default": "mdi:form-select" },
+      "new_noticeboard_items": { "default": "mdi:bulletin-board" }
     },
     "todo": {
       "homework": { "default": "mdi:clipboard-check-outline" }

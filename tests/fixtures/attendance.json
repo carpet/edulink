@@ -1,0 +1,51 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "success": true,
+  "show_today": false,
+  "show_lesson": false,
+  "show_statutory": true,
+  "lesson": [],
+  "statutory": [
+   {
+    "month": "2026-10",
+    "values": {
+     "present": 18,
+     "unauthorised": 0,
+     "absent": 2
+    },
+    "exceptions": [
+     {
+      "date": "2026-10-05",
+      "description": "Synthetic reason",
+      "type": "Absent",
+      "period": "AM"
+     },
+     {
+      "date": "2026-10-07",
+      "description": "Synthetic late",
+      "type": "Present",
+      "period": "AM"
+     }
+    ]
+   },
+   {
+    "month": "2026-09",
+    "values": {
+     "present": 30,
+     "unauthorised": 0,
+     "absent": 2
+    },
+    "exceptions": [
+     {
+      "date": "2026-09-15",
+      "description": "Synthetic reason",
+      "type": "Absent",
+      "period": "PM"
+     }
+    ]
+   }
+  ]
+ },
+ "id": "1"
+}

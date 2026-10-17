@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 import logging
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -14,7 +16,13 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .api import EdulinkAuthError, EdulinkClient, EdulinkError, Learner
+from .api import (
+    EdulinkAuthError,
+    EdulinkClient,
+    EdulinkError,
+    EdulinkPermissionError,
+    Learner,
+)
 from .const import (
     CONF_CATERING_INTERVAL,
     CONF_HOMEWORK_INTERVAL,
@@ -23,17 +31,24 @@ from .const import (
     DOMAIN,
     OFF_HOURS_INTERVAL,
     PAST_HOMEWORK_DAYS,
+    RECORD_INTERVAL,
     RETRY_INTERVAL,
+    STATUS_INTERVAL,
     TIMETABLE_INTERVAL,
 )
 from .models import (
     SCHOOL_TZ,
+    Attendance,
     Catering,
+    Clubs,
     HomeworkList,
+    RecordEvents,
+    Status,
     Timetable,
     html_to_text,
     parse_catering,
     parse_homework,
+    parse_status,
     parse_timetable,
 )
 
@@ -58,6 +73,28 @@ class EdulinkRuntimeData:
     timetable: TimetableCoordinator | None = None
     homework: HomeworkCoordinator | None = None
     catering: CateringCoordinator | None = None
+    achievement: RecordCoordinator[RecordEvents] | None = None
+    behaviour: RecordCoordinator[RecordEvents] | None = None
+    attendance: RecordCoordinator[Attendance] | None = None
+    clubs: RecordCoordinator[Clubs] | None = None
+    status: StatusCoordinator | None = None
+
+    @property
+    def learner_coordinators(self) -> list[EdulinkCoordinator[Any]]:
+        """The per-learner coordinators for the modules this school has."""
+        return [
+            coordinator
+            for coordinator in (
+                self.timetable,
+                self.homework,
+                self.catering,
+                self.achievement,
+                self.behaviour,
+                self.attendance,
+                self.clubs,
+            )
+            if coordinator is not None
+        ]
 
 
 def school_now() -> datetime:
@@ -264,14 +301,72 @@ class CateringCoordinator(EdulinkCoordinator[Catering]):
         return OFF_HOURS_INTERVAL
 
 
+class RecordCoordinator[T](EdulinkCoordinator[T]):
+    """A slowly changing module fetched with one call per learner."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: EdulinkConfigEntry,
+        client: EdulinkClient,
+        learners: list[Learner],
+        name: str,
+        fetch: Callable[[str], Awaitable[dict[str, Any]]],
+        parse: Callable[[dict[str, Any]], T],
+    ) -> None:
+        """Initialise the coordinator."""
+        super().__init__(hass, entry, client, learners, name, RECORD_INTERVAL)
+        self._fetch_raw = fetch
+        self._parse = parse
+
+    async def _fetch(self, learner_id: str) -> T:
+        return self._parse(await self._fetch_raw(learner_id))
+
+    def _interval(self, now: datetime) -> timedelta:
+        return RECORD_INTERVAL
+
+
+class StatusCoordinator(DataUpdateCoordinator[Status | None]):
+    """Account-wide unread counts. None if the account may not call Status."""
+
+    config_entry: EdulinkConfigEntry
+
+    def __init__(
+        self, hass: HomeAssistant, entry: EdulinkConfigEntry, client: EdulinkClient
+    ) -> None:
+        """Initialise the coordinator."""
+        super().__init__(
+            hass,
+            _LOGGER,
+            config_entry=entry,
+            name=f"{DOMAIN} status",
+            update_interval=STATUS_INTERVAL,
+        )
+        self.client = client
+
+    async def _async_update_data(self) -> Status | None:
+        self.update_interval = RETRY_INTERVAL
+        try:
+            status = parse_status(await self.client.status())
+        except EdulinkAuthError as err:
+            raise ConfigEntryAuthFailed(str(err)) from err
+        except EdulinkPermissionError:
+            status = None
+        except EdulinkError as err:
+            raise UpdateFailed(str(err)) from err
+        self.update_interval = STATUS_INTERVAL
+        return status
+
+
 @callback
 def async_start_clock(
     hass: HomeAssistant, entry: EdulinkConfigEntry, runtime: EdulinkRuntimeData
 ) -> None:
     """Recalculate time-dependent states on the minute, and roll over at midnight.
 
-    Midnight is detected in school time: date-based homework and catering
-    sensors are recalculated and the timetable is refetched.
+    Midnight is detected in school time: date-based sensors (homework due,
+    spend, achievements this week and year) are recalculated and the
+    timetable is refetched.
     """
     last_date = school_now().date()
 
@@ -281,8 +376,8 @@ def async_start_clock(
         today = school_now().date()
         new_day = today != last_date
         last_date = today
-        for coordinator in (runtime.timetable, runtime.homework, runtime.catering):
-            if coordinator is None or coordinator.data is None:
+        for coordinator in runtime.learner_coordinators:
+            if coordinator.data is None:
                 continue
             if coordinator is runtime.timetable or new_day:
                 coordinator.async_update_listeners()

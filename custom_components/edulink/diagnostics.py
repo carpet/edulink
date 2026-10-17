@@ -47,6 +47,18 @@ async def async_get_config_entry_diagnostics(
                 "transactions": len(c.transactions),
                 "top_ups": len(c.top_ups),
             }
+        for name, coordinator in (
+            ("achievement", runtime.achievement),
+            ("behaviour", runtime.behaviour),
+        ):
+            if coordinator and (events := (coordinator.data or {}).get(learner.id)):
+                info[name] = {"events": len(events.events)}
+        if runtime.attendance and (
+            att := (runtime.attendance.data or {}).get(learner.id)
+        ):
+            info["attendance"] = {"absences": len(att.absences)}
+        if runtime.clubs and (clubs := (runtime.clubs.data or {}).get(learner.id)):
+            info["clubs"] = {"clubs": len(clubs.names), "sessions": len(clubs.sessions)}
         learners.append(info)
 
     coordinators = {
@@ -58,6 +70,11 @@ async def async_get_config_entry_diagnostics(
             ("timetable", runtime.timetable),
             ("homework", runtime.homework),
             ("catering", runtime.catering),
+            ("achievement", runtime.achievement),
+            ("behaviour", runtime.behaviour),
+            ("attendance", runtime.attendance),
+            ("clubs", runtime.clubs),
+            ("status", runtime.status),
         )
         if coord is not None
     }

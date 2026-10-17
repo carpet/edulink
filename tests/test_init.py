@@ -14,7 +14,7 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.edulink.const import DOMAIN
+from custom_components.edulink.const import DOMAIN, RETRY_INTERVAL
 from custom_components.edulink.diagnostics import async_get_config_entry_diagnostics
 
 from .conftest import NOW, FakeEdulink
@@ -47,16 +47,23 @@ async def test_setup_creates_device(
     """Only the selected child gets a device; learner_id is always sent."""
     assert setup.state is ConfigEntryState.LOADED
     devices = dr.async_entries_for_config_entry(dr.async_get(hass), setup.entry_id)
-    assert [d.name for d in devices] == ["Alex"]
-    assert devices[0].model == "Example Academy"
+    assert sorted(d.name for d in devices) == ["Alex", "Edulink One"]
+    assert {d.model for d in devices} == {"Example Academy"}
+    learner_methods = {
+        "EduLink.Timetable",
+        "EduLink.Homework",
+        "EduLink.HomeworkDetails",
+        "EduLink.Catering",
+        "EduLink.Achievement",
+        "EduLink.Behaviour",
+        "EduLink.Attendance",
+        "EduLink.Clubs",
+    }
+    assert learner_methods <= set(fake.methods())
     for method, params in fake.calls:
-        if method in {
-            "EduLink.Timetable",
-            "EduLink.Homework",
-            "EduLink.HomeworkDetails",
-            "EduLink.Catering",
-        }:
+        if method in learner_methods:
             assert params["learner_id"] == "7001", method
+    assert ("EduLink.Status", {"last_visible": 0}) in fake.calls
 
 
 async def test_timetable_entities(
@@ -179,6 +186,105 @@ async def test_catering_entities(hass: HomeAssistant, setup: MockConfigEntry) ->
     assert top_up.attributes["time"] == "2026-10-15T08:00:00+01:00"
 
 
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_school_record_entities(
+    hass: HomeAssistant, setup: MockConfigEntry
+) -> None:
+    """Achievement, behaviour and attendance: counts, points and dates only."""
+    points = state(hass, "sensor.alex_achievement_points_this_year")
+    assert points.state == "10"
+    assert points.attributes["state_class"] == "total"
+    assert points.attributes["last_reset"] == "2026-09-01T00:00:00+01:00"
+    week = state(hass, "sensor.alex_achievements_this_week")
+    assert week.state == "2"
+    assert week.attributes["last_reset"] == "2026-10-12T00:00:00+01:00"
+    assert state(hass, "sensor.alex_last_achievement").state == "2026-10-15"
+    assert state(hass, "sensor.alex_behaviour_events_this_year").state == "2"
+    assert state(hass, "sensor.alex_last_behaviour_event").state == "2026-10-14"
+    assert state(hass, "sensor.alex_last_absence").state == "2026-10-05"
+    for st in hass.states.async_all("sensor"):
+        text = repr(st.attributes)
+        for private in ("Synthetic", "Member1", "10A/"):
+            assert private not in text, (st.entity_id, private)
+
+
+async def test_school_record_entities_disabled_by_default(
+    hass: HomeAssistant, setup: MockConfigEntry
+) -> None:
+    """Nothing about a child's record is recorded until someone opts in."""
+    registry = er.async_get(hass)
+    for entity_id in (
+        "sensor.alex_achievement_points_this_year",
+        "sensor.alex_achievements_this_week",
+        "sensor.alex_last_achievement",
+        "sensor.alex_behaviour_events_this_year",
+        "sensor.alex_last_behaviour_event",
+        "sensor.alex_last_absence",
+    ):
+        assert hass.states.get(entity_id) is None, entity_id
+        assert registry.async_get(entity_id).disabled, entity_id
+
+
+async def test_club_and_status_entities(
+    hass: HomeAssistant, setup: MockConfigEntry
+) -> None:
+    """Next club session per child; unread counts on the account device."""
+    club = state(hass, "sensor.alex_next_club_session")
+    assert club.state == "2026-10-20T14:15:00+00:00"
+    assert club.attributes["club"] == "Chess Club"
+    assert club.attributes["clubs"] == ["Chess Club", "Choir"]
+    assert state(hass, "sensor.edulink_one_new_messages").state == "2"
+    assert state(hass, "sensor.edulink_one_new_forms").state == "1"
+    assert state(hass, "sensor.edulink_one_new_noticeboard_items").state == "3"
+    entry = er.async_get(hass).async_get("sensor.edulink_one_new_messages")
+    assert entry.unique_id == "999_5001_new_messages"
+
+
+async def test_status_not_authorised(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """An account that may not call Status still loads, without status entities."""
+    freezer.move_to(NOW)
+    fake.errors["EduLink.Status"] = "You are not authorised to carry out this action"
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data.status is None
+    assert hass.states.get("sensor.edulink_one_new_messages") is None
+    assert hass.states.get("sensor.alex_next_club_session") is not None
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_optional_module_failure_does_not_block_setup(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A failing optional module is unavailable and retried; the rest load."""
+    freezer.move_to(NOW)
+    fake.network_errors.update({"EduLink.Status", "EduLink.Behaviour"})
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+    assert state(hass, "sensor.alex_current_lesson").state == "English"
+    assert state(hass, "sensor.alex_last_behaviour_event").state == "unavailable"
+    assert state(hass, "sensor.edulink_one_new_messages").state == "unavailable"
+    assert entry.runtime_data.behaviour.update_interval == RETRY_INTERVAL
+
+    fake.network_errors.clear()
+    freezer.tick(RETRY_INTERVAL)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert state(hass, "sensor.alex_last_behaviour_event").state == "2026-10-14"
+    assert state(hass, "sensor.edulink_one_new_messages").state == "2"
+
+
 async def test_session_expiry_relogs_in(
     hass: HomeAssistant, setup: MockConfigEntry, fake: FakeEdulink
 ) -> None:
@@ -234,8 +340,17 @@ async def test_module_gating(
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    assert "EduLink.Catering" not in fake.methods()
+    for method in (
+        "EduLink.Catering",
+        "EduLink.Achievement",
+        "EduLink.Behaviour",
+        "EduLink.Attendance",
+        "EduLink.Clubs",
+    ):
+        assert method not in fake.methods(), method
     assert hass.states.get("sensor.alex_catering_balance") is None
+    assert hass.states.get("sensor.alex_next_club_session") is None
+    assert er.async_get(hass).async_get("sensor.alex_last_absence") is None
     assert hass.states.get("todo.alex_homework") is None
     assert hass.states.get("sensor.alex_current_lesson") is not None
 
@@ -254,6 +369,22 @@ async def test_diagnostics_have_no_personal_data(
     """Diagnostics carry counts only."""
     diag = await async_get_config_entry_diagnostics(hass, setup)
     text = repr(diag)
-    for secret in ("secret", "p_example", "Alex", "English task", "PIZZA", "7001"):
+    for secret in (
+        "secret",
+        "p_example",
+        "Alex",
+        "English task",
+        "PIZZA",
+        "7001",
+        "Chess",
+        "Synthetic",
+        "Member1",
+    ):
         assert secret not in text
-    assert diag["learners"][0]["homework"]["current"] == 5
+    learner = diag["learners"][0]
+    assert learner["homework"]["current"] == 5
+    assert learner["achievement"] == {"events": 4}
+    assert learner["behaviour"] == {"events": 3}
+    assert learner["attendance"] == {"absences": 2}
+    assert learner["clubs"] == {"clubs": 2, "sessions": 2}
+    assert diag["coordinators"]["status"]["last_update_success"]

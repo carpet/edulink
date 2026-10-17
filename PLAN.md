@@ -246,15 +246,16 @@ No external requirements (aiohttp ships with HA).
 3. Repository `carpet/edulink` on GitHub.
 4. Attendance, behaviour and achievement deferred. See `HANDOVER.md` for how to add them.
 
-## 6. As built (v0.1.3)
+## 6. As built (v0.1.3, plus unreleased school record modules)
 
 Differences from sections 2 to 4:
 
 - No `edulink.refresh` service or `services.yaml`; `homeassistant.update_entity` covers it.
 - No reconfigure flow and no way to change the selected children without re-adding the entry (deferred).
-- Options are the low-balance threshold, the homework and catering intervals, the outstanding homework look-ahead (default 7 days) and kit reminder rules. No module include/exclude or overdue-window option; the overdue window is fixed at 14 days.
+- Options are the low-balance threshold, the homework and catering intervals, the outstanding homework look-ahead (default 7 days), kit reminder rules and the month the academic year starts (default 9). No module include/exclude or overdue-window option; the overdue window is fixed at 14 days.
 - Added in v0.1.2 and v0.1.3: last top-up reports the amount in GBP (time as an attribute); spend sensors are totals with long-term statistics; lessons today; kit today and kit for next school day; homework urgency (enum); `days_until_due` on homework lists; a flat `items` list on spent today.
 - Homework polling does not call `EduLink.Status`.
+- Unreleased, following `HANDOVER.md`: achievement (points this year, achievements this week, last achievement), behaviour (events this year, last event) and attendance (last absence) per child, all disabled by default and created only if the module is in `learner_menu`; next club session per child (enabled); and new messages, forms and noticeboard items from `EduLink.Status` on a separate "Edulink One" account device (enabled, created unless Status returns "not authorised"). Record modules and clubs poll every 12 hours, Status every 30 minutes. Not built: attendance counts or percentage, detentions, behaviour or achievement type names, "absent today".
 - Device manufacturer is "Edulink One" and the model is the school name.
 - Current lesson attributes are room, period, start and end. Teacher names and homework `set_by` are kept out of sensor attributes and appear only in calendar event descriptions.
 - Timetable week is a plain sensor (week letter), without `cycle_day_id` or an enum device class.

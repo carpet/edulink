@@ -6,7 +6,7 @@
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.10%2B-41BDF5?logo=home-assistant)](https://www.home-assistant.io/)
 [![License](https://img.shields.io/github/license/carpet/edulink)](LICENSE)
 
-Unofficial Home Assistant integration for [Edulink One](https://www.edulinkone.com/), the UK school parent/learner portal. Provides homework, timetable and catering sensors, plus calendars and a homework to-do list, for each child on a parent account (or for a learner's own account).
+Unofficial Home Assistant integration for [Edulink One](https://www.edulinkone.com/), the UK school parent/learner portal. Provides homework, timetable, catering and clubs sensors, optional achievement, behaviour and attendance sensors, unread message counts, plus calendars and a homework to-do list, for each child on a parent account (or for a learner's own account).
 
 Not affiliated with or endorsed by Edulink One or its developers. Edulink has no public API: this integration uses the same JSON-RPC calls as the Edulink website and may break if they change.
 
@@ -65,6 +65,35 @@ One device per child. Entities are only created for modules your school has enab
 | `sensor.<child>_spent_today` / `_spent_this_week` | Spend since midnight / Monday. Recorded as long-term statistics (resetting daily / weekly), so a statistics graph can chart spend per day or week. Spent today has attributes `purchases` and `items` (item names bought today) |
 | `sensor.<child>_last_top_up` | Amount of the last top-up in GBP. Attribute `time` |
 
+**Clubs** (every 12 hours)
+
+| Entity | Description |
+|---|---|
+| `sensor.<child>_next_club_session` | Start of the next session of a club the child belongs to. Attributes: `club`, `clubs` (names of the child's clubs) |
+
+**School record** (every 12 hours. Disabled by default: enable them under the child's device if you want them)
+
+| Entity | Description |
+|---|---|
+| `sensor.<child>_achievement_points_this_year` | Sum of achievement points since the academic year started (1 September by default, set in options). Recorded as a total that resets each year |
+| `sensor.<child>_achievements_this_week` | Achievements since Monday |
+| `sensor.<child>_last_achievement` | Date of the most recent achievement |
+| `sensor.<child>_behaviour_events_this_year` | Behaviour events since the academic year started |
+| `sensor.<child>_last_behaviour_event` | Date of the most recent behaviour event |
+| `sensor.<child>_last_absence` | Most recent date marked absent in the current or previous month |
+
+Only counts, points and dates are exposed. Staff comments, incident details, lesson information, staff names and absence reasons are never read into Home Assistant. There is no attendance percentage, because the meaning of Edulink's monthly attendance counts has not been confirmed.
+
+**Account** (device "Edulink One", every 30 minutes; not created if the account is not allowed to read these counts)
+
+| Entity | Description |
+|---|---|
+| `sensor.edulink_one_new_messages` | Unread messages in Edulink |
+| `sensor.edulink_one_new_forms` | New forms to complete |
+| `sensor.edulink_one_new_noticeboard_items` | New noticeboard items |
+
+These counts are relative to what has been seen in the Edulink app or website, so opening it is expected to clear them.
+
 Edulink returns the catering balance in pounds, as a whole number when there are no pence and a decimal otherwise (for example `13.5` for £13.50).
 
 ## Options
@@ -80,6 +109,7 @@ Edulink returns the catering balance in pounds, as a whole number when there are
   Art = Art materials
   ```
 - Daytime catering update interval (default 15 minutes).
+- Academic year start month (default 9, September): when achievement points and behaviour events this year reset.
 
 ## Example automations
 
@@ -133,13 +163,15 @@ automation:
           message: "Catering balance is £{{ states('sensor.alex_catering_balance') }}"
 ```
 
-After any failed update the integration retries within 15 minutes. If one child's data fails to load, the other children are unaffected and the failing child keeps their last values.
+After any failed update the integration retries within 15 minutes. If one child's data fails to load, the other children are unaffected and the failing child keeps their last values. Clubs, school record and account counts are optional: if one of them fails, its entities are unavailable until it recovers, and the rest of the integration loads as normal.
 
 ## Privacy
 
-The integration only reads timetable, homework and catering data. It does not read medical, personal, attendance, behaviour or document data.
+The integration reads timetable, homework, catering and clubs data, account unread counts, and, if the school enables them, achievement, behaviour and attendance records. It never reads medical, personal or document data.
 
-Be aware of what ends up in Home Assistant's history. Sensor attributes include lesson subjects and rooms, homework subjects, tasks and descriptions, and catering items bought. Home Assistant's recorder keeps attributes along with states, so these are stored in your database and backups. Teacher names are deliberately kept out of sensor attributes; they appear only in calendar event descriptions, which Home Assistant excludes from the recorder. Exclude entities from the recorder if you do not want this history.
+Achievement, behaviour and attendance entities are disabled by default, so nothing about a child's school record is stored until you enable them. They expose counts, points and dates only.
+
+Be aware of what ends up in Home Assistant's history. Sensor attributes include lesson subjects and rooms, homework subjects, tasks and descriptions, catering items bought, and club names. Home Assistant's recorder keeps attributes along with states, so these are stored in your database and backups. Teacher names are deliberately kept out of sensor attributes; they appear only in calendar event descriptions, which Home Assistant excludes from the recorder. Exclude entities from the recorder if you do not want this history.
 
 Diagnostics downloads contain counts only, never names, homework text or purchases.
 

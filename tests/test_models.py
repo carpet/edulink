@@ -9,11 +9,17 @@ import pytest
 from custom_components.edulink.models import (
     SCHOOL_TZ,
     Lesson,
+    academic_year_start,
     html_to_text,
     kit_for,
+    parse_achievement,
+    parse_attendance,
+    parse_behaviour,
     parse_catering,
+    parse_clubs,
     parse_homework,
     parse_kit_rules,
+    parse_status,
     parse_timetable,
 )
 
@@ -295,3 +301,102 @@ def test_kit_rules_invalid(text: str) -> None:
     """A line needs a keyword and an item."""
     with pytest.raises(ValueError):
         parse_kit_rules(text)
+
+
+@pytest.mark.parametrize(
+    ("today", "month", "expected"),
+    [
+        (date(2026, 10, 16), 9, date(2026, 9, 1)),
+        (date(2026, 9, 1), 9, date(2026, 9, 1)),
+        (date(2026, 8, 31), 9, date(2025, 9, 1)),
+        (date(2026, 1, 5), 1, date(2026, 1, 1)),
+    ],
+)
+def test_academic_year_start(today: date, month: int, expected: date) -> None:
+    """The academic year starts on the 1st of the configured month."""
+    assert academic_year_start(today, month) == expected
+
+
+def test_achievement() -> None:
+    """Dates with or without a time, string points, newest first."""
+    a = parse_achievement(load("achievement.json")["result"])
+    assert [e.date.isoformat() for e in a.events] == [
+        "2026-10-15",
+        "2026-10-12",
+        "2026-09-10",
+        "2026-07-01",
+    ]
+    assert a.latest == date(2026, 10, 15)
+    assert a.points_since(date(2026, 9, 1)) == 10
+    assert len(a.since(date(2026, 10, 12))) == 2
+
+
+def test_behaviour() -> None:
+    """Behaviour events are sorted and carry no points."""
+    b = parse_behaviour(load("behaviour.json")["result"])
+    assert b.latest == date(2026, 10, 14)
+    assert len(b.since(date(2026, 9, 1))) == 2
+    assert b.points_since(date(2000, 1, 1)) == 0
+
+
+def test_attendance() -> None:
+    """Only absences count, across every month returned."""
+    a = parse_attendance(load("attendance.json")["result"])
+    assert a.absences == [date(2026, 10, 5), date(2026, 9, 15)]
+    assert a.last_absence == date(2026, 10, 5)
+
+
+def test_clubs() -> None:
+    """Deleted clubs are skipped; the next session is the earliest still to come."""
+    c = parse_clubs(load("clubs.json")["result"])
+    assert c.names == ["Chess Club", "Choir"]
+    session = c.next_session(at(16, 10))
+    assert session.club == "Chess Club"
+    assert session.start == at(20, 15, 15)
+    assert c.next_session(at(21, 10)) is None
+
+
+def test_status() -> None:
+    """Account-wide unread counts."""
+    s = parse_status(load("status.json")["result"])
+    assert (s.new_messages, s.new_forms, s.new_noticeboard_items) == (2, 1, 3)
+
+
+def test_record_parsers_tolerate_malformed_fields() -> None:
+    """Unparseable dates are skipped and odd points count as zero."""
+    a = parse_achievement(
+        {
+            "achievement": [
+                {"date": "16/10/2026", "points": "x"},
+                {"date": None, "points": 5},
+                {"date": "2026-10-15", "points": True},
+                {"date": "2026-10-14", "points": 2.5},
+                "junk",
+            ]
+        }
+    )
+    assert [(e.date, e.points) for e in a.events] == [
+        (date(2026, 10, 16), 0),
+        (date(2026, 10, 15), 0),
+        (date(2026, 10, 14), 0),
+    ]
+    assert parse_behaviour({"behaviour": None}).latest is None
+    assert parse_attendance({"statutory": [None, {"exceptions": "x"}]}).absences == []
+    assert (
+        parse_attendance(
+            {"statutory": [{"exceptions": [{"type": "ABSENT", "date": "bad"}]}]}
+        ).absences
+        == []
+    )
+    clubs = parse_clubs(
+        {
+            "clubs": [
+                {"name": None, "next_session": 5},
+                {"name": "X", "next_session": ""},
+            ]
+        }
+    )
+    assert (clubs.names, clubs.sessions) == (["X"], [])
+    assert parse_status({"noticeboard": [], "new_messages": "2"}) == parse_status(
+        {"new_messages": 2}
+    )

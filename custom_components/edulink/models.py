@@ -482,3 +482,178 @@ def parse_catering(result: dict[str, Any]) -> Catering:
         ),
         transactions=transactions,
     )
+
+
+# ------------------------------------------------------------ school record
+#
+# Achievement, behaviour and attendance describe a child's school record, so
+# only dates, counts and points are parsed. Staff comments, incident details,
+# lesson information and absence descriptions are deliberately dropped.
+
+
+def academic_year_start(today: date, start_month: int) -> date:
+    """First day of the academic year containing today (1st of start_month)."""
+    year = today.year if today.month >= start_month else today.year - 1
+    return date(year, start_month, 1)
+
+
+def _int(value: Any) -> int:
+    """An int from an int or numeric string; anything else counts as 0."""
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value.strip())
+        except ValueError:
+            return 0
+    return 0
+
+
+def _parse_any_date(value: Any) -> date | None:
+    """ISO dates, with or without a time, or UK dd/mm/yyyy."""
+    if parsed := _parse_date(value):
+        return parsed
+    if isinstance(value, str):
+        try:
+            return datetime.strptime(value[:10], "%d/%m/%Y").date()
+        except ValueError:
+            return None
+    return None
+
+
+@dataclass(slots=True, frozen=True)
+class RecordEvent:
+    """An achievement or behaviour event: when, and points for achievements."""
+
+    date: date
+    points: int = 0
+
+
+@dataclass(slots=True)
+class RecordEvents:
+    """Achievement or behaviour events, newest first."""
+
+    events: list[RecordEvent] = field(default_factory=list)
+
+    def since(self, start: date) -> list[RecordEvent]:
+        """Events on or after a date."""
+        return [e for e in self.events if e.date >= start]
+
+    def points_since(self, start: date) -> int:
+        """Total points of events on or after a date."""
+        return sum(e.points for e in self.since(start))
+
+    @property
+    def latest(self) -> date | None:
+        """Date of the most recent event."""
+        return self.events[0].date if self.events else None
+
+
+def _record_events(raw_events: Any) -> RecordEvents:
+    events = [
+        RecordEvent(date=day, points=_int(raw.get("points")))
+        for raw in _dicts(raw_events)
+        if (day := _parse_any_date(raw.get("date")))
+    ]
+    events.sort(key=lambda e: e.date, reverse=True)
+    return RecordEvents(events=events)
+
+
+def parse_achievement(result: dict[str, Any]) -> RecordEvents:
+    """Parse an EduLink.Achievement result."""
+    return _record_events(result.get("achievement"))
+
+
+def parse_behaviour(result: dict[str, Any]) -> RecordEvents:
+    """Parse an EduLink.Behaviour result. Points are not used."""
+    events = _record_events(result.get("behaviour")).events
+    return RecordEvents(events=[RecordEvent(date=e.date) for e in events])
+
+
+@dataclass(slots=True)
+class Attendance:
+    """Dates of statutory absence exceptions in the months Edulink returns.
+
+    The units and meaning of the monthly present/unauthorised/absent counts are
+    unconfirmed (see HANDOVER.md), so they are not parsed.
+    """
+
+    absences: list[date] = field(default_factory=list)
+
+    @property
+    def last_absence(self) -> date | None:
+        """Most recent date marked absent."""
+        return self.absences[0] if self.absences else None
+
+
+def parse_attendance(result: dict[str, Any]) -> Attendance:
+    """Parse an EduLink.Attendance (format 3) result."""
+    absences = {
+        day
+        for month in _dicts(result.get("statutory"))
+        for exception in _dicts(month.get("exceptions"))
+        if _str(exception.get("type")).lower() == "absent"
+        and (day := _parse_any_date(exception.get("date")))
+    }
+    return Attendance(absences=sorted(absences, reverse=True))
+
+
+# -------------------------------------------------------------------- clubs
+
+
+@dataclass(slots=True, frozen=True)
+class ClubSession:
+    """The next session of a club the learner belongs to."""
+
+    club: str
+    start: datetime
+
+
+@dataclass(slots=True)
+class Clubs:
+    """Clubs the learner belongs to, and their next sessions."""
+
+    names: list[str] = field(default_factory=list)
+    sessions: list[ClubSession] = field(default_factory=list)
+
+    def next_session(self, now: datetime) -> ClubSession | None:
+        """The earliest session starting after now."""
+        upcoming = [s for s in self.sessions if s.start > now]
+        return min(upcoming, key=lambda s: s.start) if upcoming else None
+
+
+def parse_clubs(result: dict[str, Any]) -> Clubs:
+    """Parse an EduLink.Clubs (member: true) result, skipping deleted clubs."""
+    clubs = Clubs()
+    for raw in _dicts(result.get("clubs")):
+        if raw.get("deleted") is True:
+            continue
+        name = _str(raw.get("name")).strip()
+        if name:
+            clubs.names.append(name)
+        if start := _parse_dt(raw.get("next_session")):
+            clubs.sessions.append(ClubSession(club=name, start=start))
+    return clubs
+
+
+# ------------------------------------------------------------------- status
+
+
+@dataclass(slots=True, frozen=True)
+class Status:
+    """Account-wide counts of unread items from EduLink.Status."""
+
+    new_messages: int
+    new_forms: int
+    new_noticeboard_items: int
+
+
+def parse_status(result: dict[str, Any]) -> Status:
+    """Parse an EduLink.Status result."""
+    return Status(
+        new_messages=_int(result.get("new_messages")),
+        new_forms=_int(result.get("new_forms")),
+        new_noticeboard_items=_int(_dict(result.get("noticeboard")).get("new_items")),
+    )

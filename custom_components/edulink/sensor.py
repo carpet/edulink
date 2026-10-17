@@ -18,23 +18,30 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
 from .const import (
+    CONF_ACADEMIC_YEAR_START,
     CONF_HOMEWORK_DAYS_AHEAD,
     CONF_KIT_RULES,
     CURRENCY,
+    DEFAULT_ACADEMIC_YEAR_START,
     DEFAULT_HOMEWORK_DAYS_AHEAD,
     DEFAULT_KIT_RULES,
     OVERDUE_WINDOW_DAYS,
 )
-from .coordinator import EdulinkConfigEntry, school_now
-from .entity import EdulinkEntity
+from .coordinator import EdulinkConfigEntry, StatusCoordinator, school_now
+from .entity import EdulinkAccountEntity, EdulinkEntity
 from .models import (
     SCHOOL_TZ,
+    Attendance,
     Catering,
+    Clubs,
     Homework,
     HomeworkList,
     KitRules,
+    RecordEvents,
     SchoolDay,
+    Status,
     Timetable,
+    academic_year_start,
     kit_for,
     parse_kit_rules,
 )
@@ -340,6 +347,130 @@ CATERING_SENSORS: tuple[EdulinkSensorDescription[Catering], ...] = (
 )
 
 
+# ------------------------------------------------------------ school record
+#
+# Disabled by default: these describe a child's school record, and Home
+# Assistant keeps history indefinitely. Only counts, points and dates.
+
+
+def _record_sensors(
+    start_month: int,
+) -> tuple[
+    tuple[EdulinkSensorDescription[RecordEvents], ...],
+    tuple[EdulinkSensorDescription[RecordEvents], ...],
+]:
+    """Achievement and behaviour sensors, with the academic year from options."""
+
+    def year_start(now: datetime) -> datetime:
+        return datetime.combine(
+            academic_year_start(now.date(), start_month), time(), SCHOOL_TZ
+        )
+
+    achievement = (
+        EdulinkSensorDescription[RecordEvents](
+            key="achievement_points",
+            translation_key="achievement_points",
+            state_class=SensorStateClass.TOTAL,
+            entity_registry_enabled_default=False,
+            value_fn=lambda r, now: r.points_since(year_start(now).date()),
+            last_reset_fn=year_start,
+        ),
+        EdulinkSensorDescription[RecordEvents](
+            key="achievements_this_week",
+            translation_key="achievements_this_week",
+            state_class=SensorStateClass.TOTAL,
+            entity_registry_enabled_default=False,
+            value_fn=lambda r, now: len(r.since(_start_of_week(now).date())),
+            last_reset_fn=_start_of_week,
+        ),
+        EdulinkSensorDescription[RecordEvents](
+            key="last_achievement",
+            translation_key="last_achievement",
+            device_class=SensorDeviceClass.DATE,
+            entity_registry_enabled_default=False,
+            value_fn=lambda r, _now: r.latest,
+        ),
+    )
+    behaviour = (
+        EdulinkSensorDescription[RecordEvents](
+            key="behaviour_events",
+            translation_key="behaviour_events",
+            state_class=SensorStateClass.TOTAL,
+            entity_registry_enabled_default=False,
+            value_fn=lambda r, now: len(r.since(year_start(now).date())),
+            last_reset_fn=year_start,
+        ),
+        EdulinkSensorDescription[RecordEvents](
+            key="last_behaviour_event",
+            translation_key="last_behaviour_event",
+            device_class=SensorDeviceClass.DATE,
+            entity_registry_enabled_default=False,
+            value_fn=lambda r, _now: r.latest,
+        ),
+    )
+    return achievement, behaviour
+
+
+ATTENDANCE_SENSORS: tuple[EdulinkSensorDescription[Attendance], ...] = (
+    EdulinkSensorDescription(
+        key="last_absence",
+        translation_key="last_absence",
+        device_class=SensorDeviceClass.DATE,
+        entity_registry_enabled_default=False,
+        value_fn=lambda a, _now: a.last_absence,
+    ),
+)
+
+# -------------------------------------------------------------------- clubs
+
+
+def _next_club_attrs(c: Clubs, now: datetime) -> dict[str, Any]:
+    session = c.next_session(now)
+    return {"club": session.club if session else None, "clubs": c.names}
+
+
+CLUB_SENSORS: tuple[EdulinkSensorDescription[Clubs], ...] = (
+    EdulinkSensorDescription(
+        key="next_club_session",
+        translation_key="next_club_session",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda c, now: s.start if (s := c.next_session(now)) else None,
+        attrs_fn=_next_club_attrs,
+    ),
+)
+
+# ------------------------------------------------------------------- status
+
+
+@dataclass(frozen=True, kw_only=True)
+class EdulinkStatusSensorDescription(SensorEntityDescription):
+    """An account-wide count from EduLink.Status."""
+
+    value_fn: Callable[[Status], int]
+
+
+STATUS_SENSORS: tuple[EdulinkStatusSensorDescription, ...] = (
+    EdulinkStatusSensorDescription(
+        key="new_messages",
+        translation_key="new_messages",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda s: s.new_messages,
+    ),
+    EdulinkStatusSensorDescription(
+        key="new_forms",
+        translation_key="new_forms",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda s: s.new_forms,
+    ),
+    EdulinkStatusSensorDescription(
+        key="new_noticeboard_items",
+        translation_key="new_noticeboard_items",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda s: s.new_noticeboard_items,
+    ),
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: EdulinkConfigEntry,
@@ -347,7 +478,10 @@ async def async_setup_entry(
 ) -> None:
     """Set up sensors."""
     runtime = entry.runtime_data
-    entities: list[EdulinkSensor[Any]] = []
+    achievement, behaviour = _record_sensors(
+        int(entry.options.get(CONF_ACADEMIC_YEAR_START, DEFAULT_ACADEMIC_YEAR_START))
+    )
+    entities: list[SensorEntity] = []
     for coordinator, descriptions in (
         (
             runtime.timetable,
@@ -366,6 +500,10 @@ async def async_setup_entry(
             ),
         ),
         (runtime.catering, CATERING_SENSORS),
+        (runtime.achievement, achievement),
+        (runtime.behaviour, behaviour),
+        (runtime.attendance, ATTENDANCE_SENSORS),
+        (runtime.clubs, CLUB_SENSORS),
     ):
         if coordinator is None:
             continue
@@ -373,6 +511,11 @@ async def async_setup_entry(
             EdulinkSensor(coordinator, learner, description)
             for learner in runtime.learners
             for description in descriptions
+        )
+    if runtime.status is not None:
+        entities.extend(
+            EdulinkStatusSensor(runtime.status, description)
+            for description in STATUS_SENSORS
         )
     async_add_entities(entities)
 
@@ -398,3 +541,23 @@ class EdulinkSensor[T](EdulinkEntity[T], SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return extra attributes."""
         return self.entity_description.attrs_fn(self.learner_data, school_now())
+
+
+class EdulinkStatusSensor(EdulinkAccountEntity, SensorEntity):
+    """An account-wide count."""
+
+    entity_description: EdulinkStatusSensorDescription
+
+    def __init__(
+        self,
+        coordinator: StatusCoordinator,
+        description: EdulinkStatusSensorDescription,
+    ) -> None:
+        """Initialise the sensor."""
+        super().__init__(coordinator, description)
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the state."""
+        status = self.coordinator.data
+        return self.entity_description.value_fn(status) if status else None

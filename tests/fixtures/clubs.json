@@ -1,0 +1,45 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "success": true,
+  "clubs": [
+   {
+    "id": "41",
+    "name": "Chess Club",
+    "deleted": false,
+    "description": "Synthetic",
+    "capacity": {
+     "maximum": 20,
+     "bookings": 12
+    },
+    "location": "Library",
+    "next_session": "2026-10-20 15:15:00"
+   },
+   {
+    "id": "42",
+    "name": "Choir",
+    "deleted": false,
+    "description": "",
+    "capacity": {
+     "maximum": 40,
+     "bookings": 30
+    },
+    "location": "Hall",
+    "next_session": "2026-10-16 08:00:00"
+   },
+   {
+    "id": "43",
+    "name": "Old Club",
+    "deleted": true,
+    "description": "",
+    "capacity": {
+     "maximum": 10,
+     "bookings": 0
+    },
+    "location": "",
+    "next_session": "2026-10-17 10:00:00"
+   }
+  ]
+ },
+ "id": "1"
+}

@@ -38,6 +38,7 @@ from .api import (
     find_school,
 )
 from .const import (
+    CONF_ACADEMIC_YEAR_START,
     CONF_CATERING_INTERVAL,
     CONF_ESTABLISHMENT_ID,
     CONF_HOMEWORK_DAYS_AHEAD,
@@ -49,6 +50,7 @@ from .const import (
     CONF_SCHOOL_NAME,
     CONF_SERVER,
     CONF_USER_ID,
+    DEFAULT_ACADEMIC_YEAR_START,
     DEFAULT_CATERING_INTERVAL,
     DEFAULT_HOMEWORK_DAYS_AHEAD,
     DEFAULT_HOMEWORK_INTERVAL,
@@ -253,7 +255,7 @@ class EdulinkConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class EdulinkOptionsFlow(OptionsFlowWithReload):
-    """Polling intervals, thresholds and kit reminders."""
+    """Polling intervals, thresholds, kit reminders and the academic year."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -315,6 +317,13 @@ class EdulinkOptionsFlow(OptionsFlowWithReload):
                         step=5,
                         unit_of_measurement="min",
                         mode=NumberSelectorMode.BOX,
+                    )
+                ),
+                vol.Required(
+                    CONF_ACADEMIC_YEAR_START, default=DEFAULT_ACADEMIC_YEAR_START
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=1, max=12, step=1, mode=NumberSelectorMode.BOX
                     )
                 ),
             }

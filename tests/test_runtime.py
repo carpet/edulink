@@ -14,7 +14,13 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.edulink.const import DOMAIN, OFF_HOURS_INTERVAL, RETRY_INTERVAL
+from custom_components.edulink.const import (
+    DOMAIN,
+    OFF_HOURS_INTERVAL,
+    RECORD_INTERVAL,
+    RETRY_INTERVAL,
+    STATUS_INTERVAL,
+)
 from custom_components.edulink.models import SCHOOL_TZ
 
 from .conftest import NOW, FakeEdulink, load
@@ -66,6 +72,24 @@ async def test_two_learners_get_their_own_data(
     assert _state(hass, "sensor.sam_spent_this_week") == "0"
     learners = {p.get("learner_id") for m, p in fake.calls if m == "EduLink.Catering"}
     assert learners == {"7001", "7002"}
+
+
+async def test_two_learners_get_their_own_clubs(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    two_learner_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Club sessions are per child; status entities are created once per account."""
+    freezer.move_to(NOW)
+    fake.learner_responses[("EduLink.Clubs", "7002")] = {
+        "result": {"success": True, "clubs": []}
+    }
+    await _setup(hass, two_learner_entry)
+    assert _state(hass, "sensor.alex_next_club_session") == "2026-10-20T14:15:00+00:00"
+    assert _state(hass, "sensor.sam_next_club_session") == "unknown"
+    assert fake.methods().count("EduLink.Status") == 1
+    assert hass.states.get("sensor.edulink_one_new_messages_2") is None
 
 
 async def test_one_learner_failing_does_not_block_the_other(
@@ -168,6 +192,47 @@ async def test_midnight_rollover(
     )
     assert fake.methods().count("EduLink.Homework") == homework_polls
     assert fake.methods().count("EduLink.Timetable") == timetable_polls + 1
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_weekly_and_yearly_totals_roll_over(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Achievements this week reset at Monday midnight without polling."""
+    freezer.move_to("2026-10-18 23:59:00+01:00")
+    await _setup(hass, entry)
+    assert _state(hass, "sensor.alex_achievements_this_week") == "2"
+    polls = fake.methods().count("EduLink.Achievement")
+
+    freezer.move_to("2026-10-19 00:00:00+01:00")
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    week = hass.states.get("sensor.alex_achievements_this_week")
+    assert week.state == "0"
+    assert week.attributes["last_reset"] == "2026-10-19T00:00:00+01:00"
+    assert _state(hass, "sensor.alex_achievement_points_this_year") == "10"
+    assert fake.methods().count("EduLink.Achievement") == polls
+
+
+async def test_slow_module_intervals(
+    hass: HomeAssistant, entry: MockConfigEntry, freezer: FrozenDateTimeFactory
+) -> None:
+    """School record and clubs poll twice a day; status every half hour."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    runtime = entry.runtime_data
+    for coordinator in (
+        runtime.achievement,
+        runtime.behaviour,
+        runtime.attendance,
+        runtime.clubs,
+    ):
+        assert coordinator.update_interval == RECORD_INTERVAL
+    assert runtime.status.update_interval == STATUS_INTERVAL
 
 
 async def test_calendar_ignores_clock_ticks(

@@ -1,0 +1,56 @@
+{
+ "jsonrpc": "2.0",
+ "result": {
+  "success": true,
+  "behaviour": [
+   {
+    "id": "21",
+    "source": "EduLink",
+    "type_ids": [
+     "4"
+    ],
+    "date": "2026-09-20",
+    "recorded": {
+     "employee_id": "301"
+    },
+    "lesson_information": "10A/En1"
+   },
+   {
+    "id": "22",
+    "source": "EduLink",
+    "type_ids": [
+     "4"
+    ],
+    "date": "2026-10-14",
+    "recorded": {
+     "employee_id": "301"
+    },
+    "lesson_information": null
+   },
+   {
+    "id": "20",
+    "source": "EduLink",
+    "type_ids": [
+     "5"
+    ],
+    "date": "2026-06-01",
+    "recorded": {
+     "employee_id": "301"
+    },
+    "lesson_information": null
+   }
+  ],
+  "detentions": null,
+  "report_cards": null,
+  "employees": [
+   {
+    "id": "301",
+    "title": "Dr",
+    "forename": "Staff",
+    "surname": "Member1"
+   }
+  ],
+  "hide_fields": []
+ },
+ "id": "1"
+}

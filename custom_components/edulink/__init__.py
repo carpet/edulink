@@ -13,7 +13,11 @@ from .const import (
     CONF_LEARNERS,
     CONF_SCHOOL_NAME,
     CONF_SERVER,
+    MODULE_ACHIEVEMENT,
+    MODULE_ATTENDANCE,
+    MODULE_BEHAVIOUR,
     MODULE_CATERING,
+    MODULE_CLUBS,
     MODULE_HOMEWORK,
     MODULE_TIMETABLE,
 )
@@ -22,8 +26,16 @@ from .coordinator import (
     EdulinkConfigEntry,
     EdulinkRuntimeData,
     HomeworkCoordinator,
+    RecordCoordinator,
+    StatusCoordinator,
     TimetableCoordinator,
     async_start_clock,
+)
+from .models import (
+    parse_achievement,
+    parse_attendance,
+    parse_behaviour,
+    parse_clubs,
 )
 
 PLATFORMS: list[Platform] = [
@@ -52,7 +64,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: EdulinkConfigEntry) -> b
 
     selected = set(entry.data[CONF_LEARNERS])
     learners = [learner for learner in login.learners if learner.id in selected]
-    # An empty menu would be unusual; assume everything rather than nothing.
+    # An empty menu would be unusual; assume the core modules rather than nothing.
+    # The school record modules are only ever created when the school lists them.
     modules = login.modules or {MODULE_TIMETABLE, MODULE_HOMEWORK, MODULE_CATERING}
 
     runtime = EdulinkRuntimeData(
@@ -69,9 +82,46 @@ async def async_setup_entry(hass: HomeAssistant, entry: EdulinkConfigEntry) -> b
         runtime.catering = CateringCoordinator(
             hass, entry, client, learners, runtime.timetable
         )
+    if MODULE_ACHIEVEMENT in modules:
+        runtime.achievement = RecordCoordinator(
+            hass,
+            entry,
+            client,
+            learners,
+            "achievement",
+            client.achievement,
+            parse_achievement,
+        )
+    if MODULE_BEHAVIOUR in modules:
+        runtime.behaviour = RecordCoordinator(
+            hass,
+            entry,
+            client,
+            learners,
+            "behaviour",
+            client.behaviour,
+            parse_behaviour,
+        )
+    if MODULE_ATTENDANCE in modules:
+        runtime.attendance = RecordCoordinator(
+            hass,
+            entry,
+            client,
+            learners,
+            "attendance",
+            client.attendance,
+            parse_attendance,
+        )
+    if MODULE_CLUBS in modules:
+        runtime.clubs = RecordCoordinator(
+            hass, entry, client, learners, "clubs", client.clubs, parse_clubs
+        )
+    # Status is account-wide and not in learner_menu, so try it instead.
+    runtime.status = StatusCoordinator(hass, entry, client)
 
+    core = (runtime.timetable, runtime.homework, runtime.catering)
     try:
-        for coordinator in (runtime.timetable, runtime.homework, runtime.catering):
+        for coordinator in core:
             if coordinator is not None:
                 await coordinator.async_config_entry_first_refresh()
     except Exception:
@@ -79,6 +129,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: EdulinkConfigEntry) -> b
         await client.logout()
         raise
 
+    # The optional modules must not stop the core ones loading. If one fails
+    # its entities start unavailable and it retries on its own schedule.
+    for coordinator in (
+        runtime.achievement,
+        runtime.behaviour,
+        runtime.attendance,
+        runtime.clubs,
+        runtime.status,
+    ):
+        if coordinator is not None:
+            await coordinator.async_refresh()
+    if runtime.status.last_update_success and runtime.status.data is None:
+        # Not authorised for this account.
+        runtime.status = None
     entry.runtime_data = runtime
     async_start_clock(hass, entry, runtime)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

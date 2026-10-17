@@ -1,6 +1,20 @@
 # Handover: adding further Edulink modules
 
-v0.1.0 covers timetable, homework and catering, read-only. This document records what was observed for the modules deliberately left out (attendance, behaviour, achievement, plus a few smaller ones) and the steps to add one, following the pattern the existing modules use.
+v0.1.0 covered timetable, homework and catering, read-only. This document records what was observed for the other modules and the steps to add one, following the pattern the existing modules use.
+
+## Status of the modules below (unreleased, after v0.1.3)
+
+Built, following the rules in "Why they were left out":
+
+- Achievement: points this academic year (a total reset on the 1st of the start month option, default September), achievements this week, last achievement date. Disabled by default.
+- Behaviour: events this academic year, last event date. Disabled by default.
+- Attendance: last absence date (latest `statutory[].exceptions[]` with `type: "Absent"`). Disabled by default.
+- Clubs: next club session timestamp, with club names as attributes. Enabled.
+- Status: new messages, new forms and new noticeboard items, on an account-level "Edulink One" device. Enabled. Created unless `EduLink.Status` returns "not authorised", since it is not listed in `learner_menu`.
+
+The record modules and clubs share `RecordCoordinator` (one call per learner, 12-hour interval); Status has its own `StatusCoordinator`. Parsers accept ISO dates with or without a time, and UK `dd/mm/yyyy`, because these formats were not confirmed against live data. If a field arrives in another format the entity shows unknown rather than failing.
+
+Still not built, pending the [unverified] points below: attendance counts or percentage, "marked absent today", detentions and report cards, behaviour and achievement type names (lookups), `RegisterCodes`. Before the next release, check the new entities against a live account: the `date` format of achievements, behaviour and attendance exceptions, `clubs[].next_session`, and whether reading in the app clears the Status counts.
 
 Observations come from one parent account at one school on 2026-10-16. Anything not seen directly is marked [unverified]. Before building on a schema below, capture a fresh response, because Edulink changes without notice (the TypeScript wrapper's schemas were already out of date).
 
