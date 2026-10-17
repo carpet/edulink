@@ -141,9 +141,9 @@ Current/next lesson are computed locally from cached timetable data with a per-m
 | Catering balance | sensor (`monetary`, GBP, `state_class: total`) | `balance` (see integer caveat) | |
 | Low catering balance | binary_sensor | balance below options threshold (default £5) | threshold |
 | Last purchase | sensor (`timestamp`) | time of latest negative transaction | items, total |
-| Spent today | sensor (`monetary`) | sum of today's purchases | items |
-| Spent this week | sensor (`monetary`) | Monday-to-date | |
-| Last top-up | sensor (`timestamp`) | latest `PC Revaluer` | amount |
+| Spent today | sensor (`monetary`, `total`, resets at midnight) | sum of today's purchases | items |
+| Spent this week | sensor (`monetary`, `total`, resets on Monday) | Monday-to-date | |
+| Last top-up | sensor (`monetary`, GBP) | latest `PC Revaluer` amount | time |
 
 ### Optional (disabled by default, created only if module is in `learner_menu`)
 

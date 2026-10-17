@@ -60,8 +60,8 @@ One device per child. Entities are only created for modules your school has enab
 | `sensor.<child>_catering_balance` | Balance in GBP |
 | `binary_sensor.<child>_low_catering_balance` | On below the threshold set in options (default £5) |
 | `sensor.<child>_last_purchase` | Time of last purchase. Attributes: items, total |
-| `sensor.<child>_spent_today` / `_spent_this_week` | Spend since midnight / Monday |
-| `sensor.<child>_last_top_up` | Time of last top-up. Attribute `amount` |
+| `sensor.<child>_spent_today` / `_spent_this_week` | Spend since midnight / Monday. Recorded as long-term statistics (resetting daily / weekly), so a statistics graph can chart spend per day or week |
+| `sensor.<child>_last_top_up` | Amount of the last top-up in GBP. Attribute `time` |
 
 Edulink returns the catering balance in pounds, as a whole number when there are no pence and a decimal otherwise (for example `13.5` for £13.50).
 

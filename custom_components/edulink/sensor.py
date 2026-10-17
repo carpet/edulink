@@ -33,6 +33,7 @@ class EdulinkSensorDescription[T](SensorEntityDescription):
 
     value_fn: Callable[[T, datetime], SensorValue]
     attrs_fn: Callable[[T, datetime], dict[str, Any] | None] = lambda _d, _n: None
+    last_reset_fn: Callable[[datetime], datetime] | None = None
 
 
 # ---------------------------------------------------------------- timetable
@@ -190,7 +191,7 @@ def _last_purchase_attrs(c: Catering, _now: datetime) -> dict[str, Any] | None:
 
 
 def _last_top_up_attrs(c: Catering, _now: datetime) -> dict[str, Any] | None:
-    return {"amount": c.top_ups[0].total} if c.top_ups else None
+    return {"time": c.top_ups[0].when.isoformat()} if c.top_ups else None
 
 
 def _today_items(c: Catering, now: datetime) -> dict[str, Any]:
@@ -219,24 +220,30 @@ CATERING_SENSORS: tuple[EdulinkSensorDescription[Catering], ...] = (
         key="spent_today",
         translation_key="spent_today",
         device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
         native_unit_of_measurement=CURRENCY,
         suggested_display_precision=2,
         value_fn=lambda c, now: c.spent_since(_start_of_day(now)),
         attrs_fn=_today_items,
+        last_reset_fn=_start_of_day,
     ),
     EdulinkSensorDescription(
         key="spent_this_week",
         translation_key="spent_this_week",
         device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
         native_unit_of_measurement=CURRENCY,
         suggested_display_precision=2,
         value_fn=lambda c, now: c.spent_since(_start_of_week(now)),
+        last_reset_fn=_start_of_week,
     ),
     EdulinkSensorDescription(
         key="last_top_up",
         translation_key="last_top_up",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        value_fn=lambda c, _now: c.top_ups[0].when if c.top_ups else None,
+        device_class=SensorDeviceClass.MONETARY,
+        native_unit_of_measurement=CURRENCY,
+        suggested_display_precision=2,
+        value_fn=lambda c, _now: c.top_ups[0].total if c.top_ups else None,
         attrs_fn=_last_top_up_attrs,
     ),
 )
@@ -274,6 +281,13 @@ class EdulinkSensor[T](EdulinkEntity[T], SensorEntity):
     def native_value(self) -> SensorValue:
         """Return the state."""
         return self.entity_description.value_fn(self.learner_data, school_now())
+
+    @property
+    def last_reset(self) -> datetime | None:
+        """Start of the period a total covers."""
+        if (last_reset_fn := self.entity_description.last_reset_fn) is None:
+            return None
+        return last_reset_fn(school_now())
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:

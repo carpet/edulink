@@ -133,10 +133,20 @@ async def test_catering_entities(hass: HomeAssistant, setup: MockConfigEntry) ->
     assert balance.state == "11.0"
     assert balance.attributes["unit_of_measurement"] == "GBP"
     assert state(hass, "binary_sensor.alex_low_catering_balance").state == "off"
-    assert state(hass, "sensor.alex_spent_today").state == "2.8"
-    assert state(hass, "sensor.alex_spent_this_week").state == "6.2"
+    today = state(hass, "sensor.alex_spent_today")
+    assert today.state == "2.8"
+    assert today.attributes["state_class"] == "total"
+    assert today.attributes["last_reset"] == "2026-10-16T00:00:00+01:00"
+    week = state(hass, "sensor.alex_spent_this_week")
+    assert week.state == "6.2"
+    assert week.attributes["state_class"] == "total"
+    assert week.attributes["last_reset"] == "2026-10-12T00:00:00+01:00"
+    assert "last_reset" not in balance.attributes
     assert state(hass, "sensor.alex_last_purchase").state == "2026-10-16T11:34:38+00:00"
-    assert state(hass, "sensor.alex_last_top_up").attributes["amount"] == 15
+    top_up = state(hass, "sensor.alex_last_top_up")
+    assert top_up.state == "15.0"
+    assert top_up.attributes["unit_of_measurement"] == "GBP"
+    assert top_up.attributes["time"] == "2026-10-15T08:00:00+01:00"
 
 
 async def test_session_expiry_relogs_in(

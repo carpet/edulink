@@ -162,6 +162,10 @@ async def test_midnight_rollover(
     assert _state(hass, "sensor.alex_homework_due_today") == "2"
     assert _state(hass, "sensor.alex_homework_due_tomorrow") == "0"
     assert _state(hass, "sensor.alex_spent_today") == "0"
+    assert (
+        hass.states.get("sensor.alex_spent_today").attributes["last_reset"]
+        == "2026-10-17T00:00:00+01:00"
+    )
     assert fake.methods().count("EduLink.Homework") == homework_polls
     assert fake.methods().count("EduLink.Timetable") == timetable_polls + 1
 
