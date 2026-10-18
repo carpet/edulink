@@ -63,7 +63,8 @@ One device per child. Entities are only created for modules your school has enab
 | `binary_sensor.<child>_low_catering_balance` | On below the threshold set in options (default £5) |
 | `sensor.<child>_last_purchase` | Time of last purchase. Attributes: items, total |
 | `sensor.<child>_spent_today` / `_spent_this_week` | Spend since midnight / Monday. Recorded as long-term statistics (resetting daily / weekly), so a statistics graph can chart spend per day or week. Spent today has attributes `purchases` and `items` (item names bought today) |
-| `sensor.<child>_last_top_up` | Amount of the last top-up in GBP. Attribute `time` |
+| `sensor.<child>_last_top_up` | Time of the last top-up. Attribute `amount` |
+| `sensor.<child>_last_top_up_amount` | Amount of the last top-up in GBP |
 
 **Clubs** (every 12 hours)
 
@@ -183,4 +184,4 @@ pytest
 ruff check . && ruff format --check .
 ```
 
-Tests use synthetic fixtures in `tests/fixtures/`. See `PLAN.md` for the observed API behaviour and `HANDOVER.md` for how to add further Edulink modules.
+Tests use synthetic fixtures in `tests/fixtures/`.

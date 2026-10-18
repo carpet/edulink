@@ -1,7 +1,7 @@
 """Async client for the Edulink One JSON-RPC API.
 
 Edulink has no published documentation. Behaviour here was established by
-probing the live service; see PLAN.md for the observed schemas.
+probing the live service.
 
 This module deliberately has no Home Assistant imports so it can be extracted
 into a standalone library later.

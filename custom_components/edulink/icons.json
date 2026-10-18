@@ -18,7 +18,7 @@
       "lessons_today": { "default": "mdi:timetable" },
       "lessons_tomorrow": { "default": "mdi:bag-personal-outline" },
       "timetable_week": { "default": "mdi:calendar-week" },
-      "kit_today": { "default": "mdi:bag-checked" },
+      "kit_today": { "default": "mdi:bag-personal" },
       "kit_next_school_day": { "default": "mdi:bag-personal" },
       "homework_outstanding": { "default": "mdi:book-open-variant" },
       "homework_urgency": {
@@ -33,7 +33,8 @@
       "last_purchase": { "default": "mdi:food" },
       "spent_today": { "default": "mdi:cash-minus" },
       "spent_this_week": { "default": "mdi:cash-multiple" },
-      "last_top_up": { "default": "mdi:cash-plus" },
+      "last_top_up": { "default": "mdi:cash-clock" },
+      "last_top_up_amount": { "default": "mdi:cash-plus" },
       "achievement_points": { "default": "mdi:star-circle" },
       "achievements_this_week": { "default": "mdi:star-plus" },
       "last_achievement": { "default": "mdi:star-check" },

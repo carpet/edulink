@@ -181,9 +181,12 @@ async def test_catering_entities(hass: HomeAssistant, setup: MockConfigEntry) ->
     assert "last_reset" not in balance.attributes
     assert state(hass, "sensor.alex_last_purchase").state == "2026-10-16T11:34:38+00:00"
     top_up = state(hass, "sensor.alex_last_top_up")
-    assert top_up.state == "15.0"
-    assert top_up.attributes["unit_of_measurement"] == "GBP"
-    assert top_up.attributes["time"] == "2026-10-15T08:00:00+01:00"
+    assert top_up.state == "2026-10-15T07:00:00+00:00"
+    assert top_up.attributes["amount"] == 15
+    amount = state(hass, "sensor.alex_last_top_up_amount")
+    assert amount.state == "15.0"
+    assert amount.attributes["unit_of_measurement"] == "GBP"
+    assert "state_class" not in amount.attributes
 
 
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")

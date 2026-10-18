@@ -577,7 +577,7 @@ class Attendance:
     """Dates of statutory absence exceptions in the months Edulink returns.
 
     The units and meaning of the monthly present/unauthorised/absent counts are
-    unconfirmed (see HANDOVER.md), so they are not parsed.
+    unconfirmed, so they are not parsed.
     """
 
     absences: list[date] = field(default_factory=list)

@@ -284,7 +284,7 @@ def _last_purchase_attrs(c: Catering, _now: datetime) -> dict[str, Any] | None:
 
 
 def _last_top_up_attrs(c: Catering, _now: datetime) -> dict[str, Any] | None:
-    return {"time": c.top_ups[0].when.isoformat()} if c.top_ups else None
+    return {"amount": c.top_ups[0].total} if c.top_ups else None
 
 
 def _today_items(c: Catering, now: datetime) -> dict[str, Any]:
@@ -338,11 +338,17 @@ CATERING_SENSORS: tuple[EdulinkSensorDescription[Catering], ...] = (
     EdulinkSensorDescription(
         key="last_top_up",
         translation_key="last_top_up",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda c, _now: c.top_ups[0].when if c.top_ups else None,
+        attrs_fn=_last_top_up_attrs,
+    ),
+    EdulinkSensorDescription(
+        key="last_top_up_amount",
+        translation_key="last_top_up_amount",
         device_class=SensorDeviceClass.MONETARY,
         native_unit_of_measurement=CURRENCY,
         suggested_display_precision=2,
         value_fn=lambda c, _now: c.top_ups[0].total if c.top_ups else None,
-        attrs_fn=_last_top_up_attrs,
     ),
 )
 

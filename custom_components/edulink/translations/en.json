@@ -161,6 +161,9 @@
       "last_top_up": {
         "name": "Last top-up"
       },
+      "last_top_up_amount": {
+        "name": "Last top-up amount"
+      },
       "achievement_points": {
         "name": "Achievement points this year"
       },
