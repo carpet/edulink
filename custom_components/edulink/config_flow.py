@@ -263,8 +263,11 @@ class EdulinkOptionsFlow(OptionsFlowWithReload):
         """Manage the options."""
         errors: dict[str, str] = {}
         if user_input is not None:
+            # The frontend leaves a cleared optional field out, so a missing
+            # value means no kit rules rather than the defaults.
+            user_input = {CONF_KIT_RULES: "", **user_input}
             try:
-                parse_kit_rules(user_input.get(CONF_KIT_RULES, ""))
+                parse_kit_rules(user_input[CONF_KIT_RULES])
             except ValueError:
                 errors[CONF_KIT_RULES] = "invalid_kit_rules"
             else:
@@ -305,7 +308,7 @@ class EdulinkOptionsFlow(OptionsFlowWithReload):
                         mode=NumberSelectorMode.BOX,
                     )
                 ),
-                vol.Optional(CONF_KIT_RULES, default=DEFAULT_KIT_RULES): TextSelector(
+                vol.Optional(CONF_KIT_RULES): TextSelector(
                     TextSelectorConfig(multiline=True)
                 ),
                 vol.Required(
@@ -331,7 +334,9 @@ class EdulinkOptionsFlow(OptionsFlowWithReload):
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
-                schema, user_input or self.config_entry.options
+                schema,
+                user_input
+                or {CONF_KIT_RULES: DEFAULT_KIT_RULES, **self.config_entry.options},
             ),
             errors=errors,
         )

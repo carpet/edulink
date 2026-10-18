@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import EdulinkAuthError, EdulinkClient, EdulinkError
@@ -13,6 +16,8 @@ from .const import (
     CONF_LEARNERS,
     CONF_SCHOOL_NAME,
     CONF_SERVER,
+    CONF_USER_ID,
+    DOMAIN,
     MODULE_ACHIEVEMENT,
     MODULE_ATTENDANCE,
     MODULE_BEHAVIOUR,
@@ -131,22 +136,52 @@ async def async_setup_entry(hass: HomeAssistant, entry: EdulinkConfigEntry) -> b
 
     # The optional modules must not stop the core ones loading. If one fails
     # its entities start unavailable and it retries on its own schedule.
-    for coordinator in (
-        runtime.achievement,
-        runtime.behaviour,
-        runtime.attendance,
-        runtime.clubs,
-        runtime.status,
-    ):
-        if coordinator is not None:
-            await coordinator.async_refresh()
+    await asyncio.gather(
+        *(
+            coordinator.async_refresh()
+            for coordinator in (
+                runtime.achievement,
+                runtime.behaviour,
+                runtime.attendance,
+                runtime.clubs,
+                runtime.status,
+            )
+            if coordinator is not None
+        )
+    )
     if runtime.status.last_update_success and runtime.status.data is None:
         # Not authorised for this account.
         runtime.status = None
     entry.runtime_data = runtime
     async_start_clock(hass, entry, runtime)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    _async_remove_old_account_device(hass, entry, runtime)
     return True
+
+
+@callback
+def _async_remove_old_account_device(
+    hass: HomeAssistant, entry: EdulinkConfigEntry, runtime: EdulinkRuntimeData
+) -> None:
+    """Remove the account device used up to v0.1.5, once its entities have moved.
+
+    It was identified by the bare account id. On a learner's own login that
+    id is the learner's device, which stays.
+    """
+    user_id = entry.data[CONF_USER_ID]
+    if any(learner.id == user_id for learner in runtime.learners):
+        return
+    device_registry = dr.async_get(hass)
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"{runtime.establishment_id}_{user_id}"), entry.entry_id
+    )
+    if device is None or er.async_entries_for_device(
+        er.async_get(hass), device.id, include_disabled_entities=True
+    ):
+        return
+    device_registry.async_update_device(
+        device.id, remove_config_entry_id=entry.entry_id
+    )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: EdulinkConfigEntry) -> bool:

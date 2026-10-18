@@ -498,11 +498,13 @@ def academic_year_start(today: date, start_month: int) -> date:
 
 
 def _int(value: Any) -> int:
-    """An int from an int or numeric string; anything else counts as 0."""
+    """An int from an int, whole float or numeric string; anything else is 0."""
     if isinstance(value, bool):
         return 0
     if isinstance(value, int):
         return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
     if isinstance(value, str):
         try:
             return int(value.strip())

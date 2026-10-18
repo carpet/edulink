@@ -216,6 +216,40 @@ async def test_options(
     assert points.attributes["last_reset"] == "2026-10-01T00:00:00+01:00"
 
 
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_options_clear_kit_rules(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Clearing the kit rules turns kit reminders off.
+
+    The frontend leaves a cleared optional field out of the submission.
+    """
+    freezer.move_to(NOW)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.alex_kit_today").state == "1"
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_LOW_BALANCE: 5,
+            CONF_HOMEWORK_INTERVAL: 30,
+            CONF_HOMEWORK_DAYS_AHEAD: 7,
+            CONF_CATERING_INTERVAL: 15,
+            CONF_ACADEMIC_YEAR_START: 9,
+        },
+    )
+    await hass.async_block_till_done()
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options[CONF_KIT_RULES] == ""
+    assert hass.states.get("sensor.alex_kit_today").state == "0"
+
+
 async def test_options_invalid_kit_rules(
     hass: HomeAssistant, fake: FakeEdulink, entry: MockConfigEntry
 ) -> None:

@@ -93,7 +93,7 @@ Only counts, points and dates are exposed. Staff comments, incident details, les
 | `sensor.edulink_one_new_forms` | New forms to complete |
 | `sensor.edulink_one_new_noticeboard_items` | New noticeboard items |
 
-These counts are relative to what has been seen in the Edulink app or website, so reading the items there clears them.
+These counts are relative to what has been seen in the Edulink app or website, so reading the items there clears them. If you add more than one Edulink account, each gets its own "Edulink One" device, and the second account's entity ids end in `_2` (for example `sensor.edulink_one_new_messages_2`).
 
 Edulink returns the catering balance in pounds, as a whole number when there are no pence and a decimal otherwise (for example `13.5` for £13.50).
 
@@ -109,6 +109,7 @@ Edulink returns the catering balance in pounds, as a whole number when there are
   Food = Food Tech ingredients
   Art = Art materials
   ```
+  Clear the box to turn kit reminders off.
 - Daytime catering update interval (default 15 minutes).
 - Academic year start month (default 9, September): when achievement points and behaviour events this year reset.
 

@@ -15,6 +15,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.edulink.const import (
+    CONF_ACADEMIC_YEAR_START,
     DOMAIN,
     OFF_HOURS_INTERVAL,
     RECORD_INTERVAL,
@@ -195,7 +196,7 @@ async def test_midnight_rollover(
 
 
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")
-async def test_weekly_and_yearly_totals_roll_over(
+async def test_weekly_totals_roll_over(
     hass: HomeAssistant,
     fake: FakeEdulink,
     entry: MockConfigEntry,
@@ -216,6 +217,89 @@ async def test_weekly_and_yearly_totals_roll_over(
     assert week.attributes["last_reset"] == "2026-10-19T00:00:00+01:00"
     assert _state(hass, "sensor.alex_achievement_points_this_year") == "10"
     assert fake.methods().count("EduLink.Achievement") == polls
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_yearly_totals_roll_over(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Points and behaviour events this year reset on 1 September."""
+    freezer.move_to("2027-08-31 23:59:00+01:00")
+    await _setup(hass, entry)
+    # Since 1 September 2026: 3 + 2 + 5 points; two behaviour events.
+    assert _state(hass, "sensor.alex_achievement_points_this_year") == "10"
+    assert _state(hass, "sensor.alex_behaviour_events_this_year") == "2"
+
+    freezer.move_to("2027-09-01 00:00:00+01:00")
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    points = hass.states.get("sensor.alex_achievement_points_this_year")
+    assert points.state == "0"
+    assert points.attributes["last_reset"] == "2027-09-01T00:00:00+01:00"
+    events = hass.states.get("sensor.alex_behaviour_events_this_year")
+    assert events.state == "0"
+    assert events.attributes["last_reset"] == "2027-09-01T00:00:00+01:00"
+
+
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_yearly_totals_use_start_month_option(
+    hass: HomeAssistant,
+    entry_data: dict,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A January start month resets the year totals on 1 January."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="999_5001",
+        data=entry_data,
+        options={CONF_ACADEMIC_YEAR_START: 1},
+        title="Example",
+    )
+    freezer.move_to("2026-12-31 23:59:00+00:00")
+    await _setup(hass, entry)
+    # Every fixture event is in 2026: 3 + 2 + 5 + 10 points, three events.
+    assert _state(hass, "sensor.alex_achievement_points_this_year") == "20"
+    assert _state(hass, "sensor.alex_behaviour_events_this_year") == "3"
+
+    freezer.move_to("2027-01-01 00:00:00+00:00")
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    points = hass.states.get("sensor.alex_achievement_points_this_year")
+    assert points.state == "0"
+    assert points.attributes["last_reset"] == "2027-01-01T00:00:00+00:00"
+    assert _state(hass, "sensor.alex_behaviour_events_this_year") == "0"
+
+
+async def test_next_club_session_moves_on_when_a_session_starts(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Once a session starts the next one shows, without polling Edulink."""
+    clubs = load("clubs.json")
+    clubs["result"]["clubs"][1]["next_session"] = "2026-10-16 10:30:00"
+    fake.responses["EduLink.Clubs"] = clubs
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    session = hass.states.get("sensor.alex_next_club_session")
+    assert session.state == "2026-10-16T09:30:00+00:00"
+    assert session.attributes["club"] == "Choir"
+    polls = fake.methods().count("EduLink.Clubs")
+
+    freezer.move_to("2026-10-16 10:31:00+01:00")
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    session = hass.states.get("sensor.alex_next_club_session")
+    assert session.state == "2026-10-20T14:15:00+00:00"
+    assert session.attributes["club"] == "Chess Club"
+    assert fake.methods().count("EduLink.Clubs") == polls
 
 
 async def test_slow_module_intervals(

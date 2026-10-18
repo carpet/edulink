@@ -64,7 +64,9 @@ class EdulinkAccountEntity(CoordinatorEntity[StatusCoordinator]):
         account = f"{entry.runtime_data.establishment_id}_{entry.data[CONF_USER_ID]}"
         self._attr_unique_id = f"{account}_{description.key}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, account)},
+            # Not the bare account id: on a learner's own login that is also
+            # the learner's device.
+            identifiers={(DOMAIN, f"{account}_account")},
             name="Edulink One",
             manufacturer="Edulink One",
             model=entry.runtime_data.school_name,

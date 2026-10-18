@@ -363,7 +363,10 @@ def test_status() -> None:
 
 
 def test_record_parsers_tolerate_malformed_fields() -> None:
-    """Unparseable dates are skipped and odd points count as zero."""
+    """Unparseable dates are skipped and odd points count as zero.
+
+    Whole-number decimals such as 4.0 count as their value.
+    """
     a = parse_achievement(
         {
             "achievement": [
@@ -371,6 +374,7 @@ def test_record_parsers_tolerate_malformed_fields() -> None:
                 {"date": None, "points": 5},
                 {"date": "2026-10-15", "points": True},
                 {"date": "2026-10-14", "points": 2.5},
+                {"date": "2026-10-13", "points": 4.0},
                 "junk",
             ]
         }
@@ -379,6 +383,7 @@ def test_record_parsers_tolerate_malformed_fields() -> None:
         (date(2026, 10, 16), 0),
         (date(2026, 10, 15), 0),
         (date(2026, 10, 14), 0),
+        (date(2026, 10, 13), 4),
     ]
     assert parse_behaviour({"behaviour": None}).latest is None
     assert parse_attendance({"statutory": [None, {"exceptions": "x"}]}).absences == []

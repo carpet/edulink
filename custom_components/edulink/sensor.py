@@ -27,7 +27,7 @@ from .const import (
     DEFAULT_KIT_RULES,
     OVERDUE_WINDOW_DAYS,
 )
-from .coordinator import EdulinkConfigEntry, StatusCoordinator, school_now
+from .coordinator import EdulinkConfigEntry, school_now
 from .entity import EdulinkAccountEntity, EdulinkEntity
 from .models import (
     SCHOOL_TZ,
@@ -147,10 +147,14 @@ TIMETABLE_SENSORS: tuple[EdulinkSensorDescription[Timetable], ...] = (
 )
 
 
+def _kit_items(day: SchoolDay | None, rules: KitRules) -> list[str]:
+    return kit_for(day.teaching, rules) if day else []
+
+
 def _kit_attrs(day: SchoolDay | None, rules: KitRules) -> dict[str, Any]:
     return {
         "date": day.date.isoformat() if day else None,
-        "items": kit_for(day.teaching, rules) if day else [],
+        "items": _kit_items(day, rules),
     }
 
 
@@ -170,13 +174,13 @@ def _timetable_sensors(
         EdulinkSensorDescription(
             key="kit_today",
             translation_key="kit_today",
-            value_fn=lambda tt, now: len(_kit_attrs(today(tt, now), rules)["items"]),
+            value_fn=lambda tt, now: len(_kit_items(today(tt, now), rules)),
             attrs_fn=lambda tt, now: _kit_attrs(today(tt, now), rules),
         ),
         EdulinkSensorDescription(
             key="kit_next_school_day",
             translation_key="kit_next_school_day",
-            value_fn=lambda tt, now: len(_kit_attrs(next_day(tt, now), rules)["items"]),
+            value_fn=lambda tt, now: len(_kit_items(next_day(tt, now), rules)),
             attrs_fn=lambda tt, now: _kit_attrs(next_day(tt, now), rules),
         ),
     )
@@ -373,7 +377,7 @@ def _record_sensors(
         )
 
     achievement = (
-        EdulinkSensorDescription[RecordEvents](
+        EdulinkSensorDescription(
             key="achievement_points",
             translation_key="achievement_points",
             state_class=SensorStateClass.TOTAL,
@@ -381,7 +385,7 @@ def _record_sensors(
             value_fn=lambda r, now: r.points_since(year_start(now).date()),
             last_reset_fn=year_start,
         ),
-        EdulinkSensorDescription[RecordEvents](
+        EdulinkSensorDescription(
             key="achievements_this_week",
             translation_key="achievements_this_week",
             state_class=SensorStateClass.TOTAL,
@@ -389,7 +393,7 @@ def _record_sensors(
             value_fn=lambda r, now: len(r.since(_start_of_week(now).date())),
             last_reset_fn=_start_of_week,
         ),
-        EdulinkSensorDescription[RecordEvents](
+        EdulinkSensorDescription(
             key="last_achievement",
             translation_key="last_achievement",
             device_class=SensorDeviceClass.DATE,
@@ -398,7 +402,7 @@ def _record_sensors(
         ),
     )
     behaviour = (
-        EdulinkSensorDescription[RecordEvents](
+        EdulinkSensorDescription(
             key="behaviour_events",
             translation_key="behaviour_events",
             state_class=SensorStateClass.TOTAL,
@@ -406,7 +410,7 @@ def _record_sensors(
             value_fn=lambda r, now: len(r.since(year_start(now).date())),
             last_reset_fn=year_start,
         ),
-        EdulinkSensorDescription[RecordEvents](
+        EdulinkSensorDescription(
             key="last_behaviour_event",
             translation_key="last_behaviour_event",
             device_class=SensorDeviceClass.DATE,
@@ -553,14 +557,6 @@ class EdulinkStatusSensor(EdulinkAccountEntity, SensorEntity):
     """An account-wide count."""
 
     entity_description: EdulinkStatusSensorDescription
-
-    def __init__(
-        self,
-        coordinator: StatusCoordinator,
-        description: EdulinkStatusSensorDescription,
-    ) -> None:
-        """Initialise the sensor."""
-        super().__init__(coordinator, description)
 
     @property
     def native_value(self) -> int | None:

@@ -379,7 +379,8 @@ def async_start_clock(
         for coordinator in runtime.learner_coordinators:
             if coordinator.data is None:
                 continue
-            if coordinator is runtime.timetable or new_day:
+            # Timetable and club states move on as lessons and sessions start.
+            if coordinator in (runtime.timetable, runtime.clubs) or new_day:
                 coordinator.async_update_listeners()
         if new_day and runtime.timetable is not None:
             entry.async_create_background_task(

@@ -14,10 +14,15 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.edulink.const import DOMAIN, RETRY_INTERVAL
+from custom_components.edulink.const import (
+    CONF_LEARNERS,
+    CONF_USER_ID,
+    DOMAIN,
+    RETRY_INTERVAL,
+)
 from custom_components.edulink.diagnostics import async_get_config_entry_diagnostics
 
-from .conftest import NOW, FakeEdulink
+from .conftest import NOW, FakeEdulink, load
 
 
 @pytest.fixture
@@ -39,6 +44,85 @@ def state(hass: HomeAssistant, entity_id: str):
     st = hass.states.get(entity_id)
     assert st is not None, entity_id
     return st
+
+
+async def test_learner_login_keeps_account_device_separate(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry_data: dict,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """On a learner's own login the account entities get their own device."""
+    login = load("login.json")
+    login["result"]["user"] = {
+        **login["result"]["user"],
+        "id": "7001",
+        "forename": "Alex",
+        "types": ["learner"],
+    }
+    login["result"]["children"] = []
+    fake.responses["EduLink.Login"] = login
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="999_7001",
+        data={**entry_data, CONF_USER_ID: "7001", CONF_LEARNERS: ["7001"]},
+        title="Example",
+    )
+    freezer.move_to(NOW)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    device_registry = dr.async_get(hass)
+    entity_registry = er.async_get(hass)
+    learner = device_registry.async_get_device_by_identifier(
+        (DOMAIN, "999_7001"), entry.entry_id
+    )
+    account = device_registry.async_get_device_by_identifier(
+        (DOMAIN, "999_7001_account"), entry.entry_id
+    )
+    assert learner.name == "Alex"
+    assert account.name == "Edulink One"
+    lesson = entity_registry.async_get("sensor.alex_current_lesson")
+    messages = entity_registry.async_get("sensor.edulink_one_new_messages")
+    assert lesson.device_id == learner.id
+    assert messages.device_id == account.id
+
+
+async def test_old_account_device_is_replaced(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """The pre-v0.1.6 account device goes; its entities keep their ids."""
+    entry.add_to_hass(hass)
+    device_registry = dr.async_get(hass)
+    entity_registry = er.async_get(hass)
+    old = device_registry.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, "999_5001")},
+        name="Edulink One",
+    )
+    entity_registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        "999_5001_new_messages",
+        config_entry=entry,
+        device_id=old.id,
+        suggested_object_id="my_messages",
+    )
+    freezer.move_to(NOW)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert device_registry.async_get(old.id) is None
+    new = device_registry.async_get_device_by_identifier(
+        (DOMAIN, "999_5001_account"), entry.entry_id
+    )
+    messages = entity_registry.async_get("sensor.my_messages")
+    assert messages.device_id == new.id
+    assert state(hass, "sensor.my_messages").state == "2"
 
 
 async def test_setup_creates_device(
