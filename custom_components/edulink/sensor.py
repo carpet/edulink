@@ -533,6 +533,9 @@ async def async_setup_entry(
 class EdulinkSensor[T](EdulinkEntity[T], SensorEntity):
     """An Edulink sensor."""
 
+    # Homework descriptions are teachers' free text and can name staff.
+    _unrecorded_attributes = frozenset({"description"})
+
     entity_description: EdulinkSensorDescription[T]
 
     @property

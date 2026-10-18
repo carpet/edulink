@@ -227,6 +227,7 @@ async def test_homework_entities(hass: HomeAssistant, setup: MockConfigEntry) ->
     nxt = state(hass, "sensor.alex_next_homework_due")
     assert nxt.state == "2026-10-16"
     assert nxt.attributes["description"] == "Read chapter 3\nAnswer questions 1-4"
+    assert "description" in nxt.state_info["unrecorded_attributes"]
     assert state(hass, "todo.alex_homework").state == "4"
     assert (
         state(hass, "calendar.alex_homework").attributes["message"]
