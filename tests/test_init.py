@@ -321,6 +321,13 @@ async def test_club_and_status_entities(
     assert club.state == "2026-10-20T14:15:00+00:00"
     assert club.attributes["club"] == "Chess Club"
     assert club.attributes["clubs"] == ["Chess Club", "Choir"]
+    assert club.attributes["sessions"] == [
+        {
+            "club": "Chess Club",
+            "start": "2026-10-20T15:15:00+01:00",
+            "location": "Library",
+        }
+    ]
     assert state(hass, "sensor.edulink_one_new_messages").state == "2"
     assert state(hass, "sensor.edulink_one_new_forms").state == "1"
     assert state(hass, "sensor.edulink_one_new_noticeboard_items").state == "3"

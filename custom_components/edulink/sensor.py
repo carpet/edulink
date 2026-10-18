@@ -435,8 +435,21 @@ ATTENDANCE_SENSORS: tuple[EdulinkSensorDescription[Attendance], ...] = (
 
 
 def _next_club_attrs(c: Clubs, now: datetime) -> dict[str, Any]:
-    session = c.next_session(now)
-    return {"club": session.club if session else None, "clubs": c.names}
+    upcoming = c.upcoming(now)
+    return {
+        "club": upcoming[0].club if upcoming else None,
+        "clubs": c.names,
+        # Edulink only gives each club's next session, so this is at most one
+        # per club.
+        "sessions": [
+            {
+                "club": s.club,
+                "start": s.start.isoformat(),
+                "location": s.location or None,
+            }
+            for s in upcoming
+        ],
+    }
 
 
 CLUB_SENSORS: tuple[EdulinkSensorDescription[Clubs], ...] = (

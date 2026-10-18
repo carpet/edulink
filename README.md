@@ -70,7 +70,7 @@ One device per child. Entities are only created for modules your school has enab
 
 | Entity | Description |
 |---|---|
-| `sensor.<child>_next_club_session` | Start of the next session of a club the child belongs to. Attributes: `club`, `clubs` (names of the child's clubs) |
+| `sensor.<child>_next_club_session` | Start of the next session of a club the child belongs to. Attributes: `club`, `clubs` (names of the child's clubs), `sessions` (each club's next session still to come, earliest first: `club`, `start`, `location`). Edulink only gives the next session of each club, not a schedule |
 
 **School record** (every 12 hours. Disabled by default: enable them under the child's device if you want them)
 
@@ -173,7 +173,7 @@ The integration reads timetable, homework, catering and clubs data, account unre
 
 Achievement, behaviour and attendance entities are disabled by default, so nothing about a child's school record is stored until you enable them. They expose counts, points and dates only.
 
-Be aware of what ends up in Home Assistant's history. Sensor attributes include lesson subjects and rooms, homework subjects, tasks and descriptions, catering items bought, and club names. Home Assistant's recorder keeps attributes along with states, so these are stored in your database and backups. Homework descriptions are the exception: they are teachers' free text and can mention staff, so they are excluded from the recorder. Teacher names are deliberately kept out of sensor attributes otherwise; they appear only in calendar event descriptions, which Home Assistant also excludes from the recorder. Exclude entities from the recorder if you do not want this history.
+Be aware of what ends up in Home Assistant's history. Sensor attributes include lesson subjects and rooms, homework subjects, tasks and descriptions, catering items bought, and club names and locations. Home Assistant's recorder keeps attributes along with states, so these are stored in your database and backups. Homework descriptions are the exception: they are teachers' free text and can mention staff, so they are excluded from the recorder. Teacher names are deliberately kept out of sensor attributes otherwise; they appear only in calendar event descriptions, which Home Assistant also excludes from the recorder. Exclude entities from the recorder if you do not want this history.
 
 Diagnostics downloads contain counts only, never names, homework text or purchases.
 

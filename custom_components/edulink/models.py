@@ -611,6 +611,7 @@ class ClubSession:
 
     club: str
     start: datetime
+    location: str = ""
 
 
 @dataclass(slots=True)
@@ -620,10 +621,16 @@ class Clubs:
     names: list[str] = field(default_factory=list)
     sessions: list[ClubSession] = field(default_factory=list)
 
+    def upcoming(self, now: datetime) -> list[ClubSession]:
+        """Sessions starting after now, earliest first."""
+        return sorted(
+            (s for s in self.sessions if s.start > now), key=lambda s: s.start
+        )
+
     def next_session(self, now: datetime) -> ClubSession | None:
         """The earliest session starting after now."""
-        upcoming = [s for s in self.sessions if s.start > now]
-        return min(upcoming, key=lambda s: s.start) if upcoming else None
+        upcoming = self.upcoming(now)
+        return upcoming[0] if upcoming else None
 
 
 def parse_clubs(result: dict[str, Any]) -> Clubs:
@@ -636,7 +643,13 @@ def parse_clubs(result: dict[str, Any]) -> Clubs:
         if name:
             clubs.names.append(name)
         if start := _parse_dt(raw.get("next_session")):
-            clubs.sessions.append(ClubSession(club=name, start=start))
+            clubs.sessions.append(
+                ClubSession(
+                    club=name,
+                    start=start,
+                    location=_str(raw.get("location")).strip(),
+                )
+            )
     return clubs
 
 

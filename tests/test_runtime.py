@@ -291,6 +291,10 @@ async def test_next_club_session_moves_on_when_a_session_starts(
     session = hass.states.get("sensor.alex_next_club_session")
     assert session.state == "2026-10-16T09:30:00+00:00"
     assert session.attributes["club"] == "Choir"
+    assert [s["club"] for s in session.attributes["sessions"]] == [
+        "Choir",
+        "Chess Club",
+    ]
     polls = fake.methods().count("EduLink.Clubs")
 
     freezer.move_to("2026-10-16 10:31:00+01:00")
@@ -300,6 +304,7 @@ async def test_next_club_session_moves_on_when_a_session_starts(
     session = hass.states.get("sensor.alex_next_club_session")
     assert session.state == "2026-10-20T14:15:00+00:00"
     assert session.attributes["club"] == "Chess Club"
+    assert [s["club"] for s in session.attributes["sessions"]] == ["Chess Club"]
     assert fake.methods().count("EduLink.Clubs") == polls
 
 

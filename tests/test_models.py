@@ -353,6 +353,8 @@ def test_clubs() -> None:
     session = c.next_session(at(16, 10))
     assert session.club == "Chess Club"
     assert session.start == at(20, 15, 15)
+    assert session.location == "Library"
+    assert [s.club for s in c.upcoming(at(15, 10))] == ["Choir", "Chess Club"]
     assert c.next_session(at(21, 10)) is None
 
 
