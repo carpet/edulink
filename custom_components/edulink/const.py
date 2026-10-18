@@ -42,6 +42,10 @@ STATUS_INTERVAL: Final = timedelta(minutes=30)
 OFF_HOURS_INTERVAL: Final = timedelta(hours=2)
 # Retry delay after a failed poll, so a blip does not cost a full interval.
 RETRY_INTERVAL: Final = timedelta(minutes=15)
+# Repeated failures double the retry delay up to this, or the normal interval
+# if that is longer. A Retry-After from Edulink is honoured up to a day.
+MAX_BACKOFF: Final = timedelta(hours=2)
+MAX_RETRY_AFTER: Final = timedelta(days=1)
 
 # Overdue homework only looks back this far; older "Not submitted" items are noise.
 OVERDUE_WINDOW_DAYS: Final = 14

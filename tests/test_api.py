@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, datetime, timedelta
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -13,10 +14,12 @@ from custom_components.edulink.api import (
     EdulinkClient,
     EdulinkError,
     EdulinkPermissionError,
+    EdulinkRateLimitError,
+    _retry_after,
     _server_url,
 )
 
-from .conftest import SERVER, FakeEdulink
+from .conftest import LOGIN_FAILED, SERVER, FakeEdulink
 
 
 @pytest.mark.parametrize(
@@ -69,9 +72,19 @@ async def test_failed_relogin_is_an_auth_error(
     c = client(hass)
     await c.login()
     fake.expire()
-    fake.errors["EduLink.Login"] = "Incorrect username or password"
+    fake.errors["EduLink.Login"] = LOGIN_FAILED
     with pytest.raises(EdulinkAuthError):
         await c.catering("7001")
+
+
+async def test_other_login_error_is_not_an_auth_error(
+    hass: HomeAssistant, fake: FakeEdulink
+) -> None:
+    """A login error other than "Login failed" (e.g. throttling) is temporary."""
+    fake.errors["EduLink.Login"] = "Too many requests, please try again later"
+    with pytest.raises(EdulinkError) as err:
+        await client(hass).login()
+    assert not isinstance(err.value, EdulinkAuthError)
 
 
 async def test_permission_error(hass: HomeAssistant, fake: FakeEdulink) -> None:
@@ -82,3 +95,37 @@ async def test_permission_error(hass: HomeAssistant, fake: FakeEdulink) -> None:
     )
     with pytest.raises(EdulinkPermissionError):
         await c.catering("7001")
+
+
+@pytest.mark.parametrize(
+    ("header", "expected"),
+    [
+        ("120", timedelta(seconds=120)),
+        (None, None),
+        ("", None),
+        ("soon", None),
+        ("-5", None),
+        # A date in the past means no wait.
+        ("Wed, 21 Oct 2015 07:28:00 GMT", timedelta(0)),
+    ],
+)
+def test_retry_after(header: str | None, expected: timedelta | None) -> None:
+    """Retry-After is seconds or an HTTP date; anything else is ignored."""
+    assert _retry_after(header) == expected
+
+
+def test_retry_after_http_date() -> None:
+    """An HTTP date in the future gives the time until then."""
+    when = datetime.now(UTC) + timedelta(hours=1)
+    delay = _retry_after(when.strftime("%a, %d %b %Y %H:%M:%S GMT"))
+    assert timedelta(minutes=59) < delay <= timedelta(hours=1)
+
+
+async def test_rate_limited(hass: HomeAssistant, fake: FakeEdulink) -> None:
+    """HTTP 429 raises a rate limit error carrying Retry-After."""
+    api = client(hass)
+    await api.login()
+    fake.rate_limits["EduLink.Catering"] = "300"
+    with pytest.raises(EdulinkRateLimitError) as err:
+        await api.catering("7001")
+    assert err.value.retry_after == timedelta(seconds=300)

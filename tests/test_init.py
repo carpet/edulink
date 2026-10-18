@@ -22,7 +22,7 @@ from custom_components.edulink.const import (
 )
 from custom_components.edulink.diagnostics import async_get_config_entry_diagnostics
 
-from .conftest import NOW, FakeEdulink, load
+from .conftest import LOGIN_FAILED, NOW, FakeEdulink, load
 
 
 @pytest.fixture
@@ -388,7 +388,7 @@ async def test_auth_failure_starts_reauth(
 ) -> None:
     """If re-login fails, reauth starts."""
     fake.expire()
-    fake.errors["EduLink.Login"] = "Incorrect username or password"
+    fake.errors["EduLink.Login"] = LOGIN_FAILED
     await setup.runtime_data.catering.async_refresh()
     await hass.async_block_till_done()
     flows = hass.config_entries.flow.async_progress_by_handler(DOMAIN)
@@ -399,10 +399,21 @@ async def test_setup_login_failure(
     hass: HomeAssistant, fake: FakeEdulink, entry: MockConfigEntry
 ) -> None:
     """Bad credentials at startup."""
-    fake.errors["EduLink.Login"] = "Incorrect username or password"
+    fake.errors["EduLink.Login"] = LOGIN_FAILED
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     assert entry.state is ConfigEntryState.SETUP_ERROR
+
+
+async def test_setup_other_login_error_retries(
+    hass: HomeAssistant, fake: FakeEdulink, entry: MockConfigEntry
+) -> None:
+    """A login error that is not bad credentials retries instead of reauth."""
+    fake.errors["EduLink.Login"] = "Too many requests, please try again later"
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    assert entry.state is ConfigEntryState.SETUP_RETRY
+    assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN)
 
 
 async def test_setup_network_failure(

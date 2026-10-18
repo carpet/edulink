@@ -21,6 +21,7 @@ from .api import (
     EdulinkClient,
     EdulinkError,
     EdulinkPermissionError,
+    EdulinkRateLimitError,
     Learner,
 )
 from .const import (
@@ -29,6 +30,8 @@ from .const import (
     DEFAULT_CATERING_INTERVAL,
     DEFAULT_HOMEWORK_INTERVAL,
     DOMAIN,
+    MAX_BACKOFF,
+    MAX_RETRY_AFTER,
     OFF_HOURS_INTERVAL,
     PAST_HOMEWORK_DAYS,
     RECORD_INTERVAL,
@@ -110,6 +113,20 @@ def until(now: datetime, at: time) -> timedelta:
     return target - now
 
 
+def retry_delay(
+    failures: int, normal: timedelta, retry_after: timedelta | None = None
+) -> timedelta:
+    """Delay before retrying after failures in a row.
+
+    Doubles from RETRY_INTERVAL, up to the normal interval or MAX_BACKOFF,
+    whichever is longer, and never sooner than Edulink asked.
+    """
+    delay = min(RETRY_INTERVAL * 2 ** (failures - 1), max(normal, MAX_BACKOFF))
+    if retry_after is not None:
+        delay = max(delay, min(retry_after, MAX_RETRY_AFTER))
+    return delay
+
+
 class EdulinkCoordinator[T](DataUpdateCoordinator[dict[str, T]]):
     """Fetches one module for every selected learner, keyed by learner id.
 
@@ -138,23 +155,35 @@ class EdulinkCoordinator[T](DataUpdateCoordinator[dict[str, T]]):
         )
         self.client = client
         self.learners = learners
+        self.failures = 0
 
     async def _async_update_data(self) -> dict[str, T]:
         data: dict[str, T] = {}
         errors: list[EdulinkError] = []
+        retry_after: timedelta | None = None
         for learner in self.learners:
-            try:
-                data[learner.id] = await self._fetch(learner.id)
-            except EdulinkAuthError as err:
-                raise ConfigEntryAuthFailed(str(err)) from err
-            except EdulinkError as err:
-                errors.append(err)
-                if self.data and learner.id in self.data:
-                    data[learner.id] = self.data[learner.id]
+            if retry_after is not None:
+                # Rate limited: don't call again for the remaining learners.
+                errors.append(EdulinkError(f"{self.name}: skipped, rate limited"))
+            else:
+                try:
+                    data[learner.id] = await self._fetch(learner.id)
+                    continue
+                except EdulinkAuthError as err:
+                    raise ConfigEntryAuthFailed(str(err)) from err
+                except EdulinkRateLimitError as err:
+                    errors.append(err)
+                    retry_after = err.retry_after or RETRY_INTERVAL
+                except EdulinkError as err:
+                    errors.append(err)
+            if self.data and learner.id in self.data:
+                data[learner.id] = self.data[learner.id]
 
-        self.update_interval = self._interval(school_now())
+        normal = self._interval(school_now())
+        self.update_interval = normal
         if errors:
-            self.update_interval = min(self.update_interval, RETRY_INTERVAL)
+            self.failures += 1
+            self.update_interval = retry_delay(self.failures, normal, retry_after)
             if len(errors) == len(self.learners):
                 raise UpdateFailed(str(errors[0]))
             _LOGGER.warning(
@@ -164,6 +193,8 @@ class EdulinkCoordinator[T](DataUpdateCoordinator[dict[str, T]]):
                 len(self.learners),
                 errors[0],
             )
+        else:
+            self.failures = 0
         return data
 
     @abstractmethod
@@ -238,7 +269,7 @@ class HomeworkCoordinator(EdulinkCoordinator[HomeworkList]):
                     details = await self.client.homework_details(
                         learner_id, hw.id, hw.source
                     )
-                except EdulinkAuthError:
+                except (EdulinkAuthError, EdulinkRateLimitError):
                     raise
                 except EdulinkError as err:
                     _LOGGER.debug("No details for homework %s: %s", hw.id, err)
@@ -343,17 +374,26 @@ class StatusCoordinator(DataUpdateCoordinator[Status | None]):
             update_interval=STATUS_INTERVAL,
         )
         self.client = client
+        self.failures = 0
 
     async def _async_update_data(self) -> Status | None:
-        self.update_interval = RETRY_INTERVAL
+        # Set before the fetch so that an exception still schedules the retry.
+        self.failures += 1
+        self.update_interval = retry_delay(self.failures, STATUS_INTERVAL)
         try:
             status = parse_status(await self.client.status())
         except EdulinkAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except EdulinkPermissionError:
             status = None
+        except EdulinkRateLimitError as err:
+            self.update_interval = retry_delay(
+                self.failures, STATUS_INTERVAL, err.retry_after
+            )
+            raise UpdateFailed(str(err)) from err
         except EdulinkError as err:
             raise UpdateFailed(str(err)) from err
+        self.failures = 0
         self.update_interval = STATUS_INTERVAL
         return status
 
@@ -382,7 +422,8 @@ def async_start_clock(
             # Timetable and club states move on as lessons and sessions start.
             if coordinator in (runtime.timetable, runtime.clubs) or new_day:
                 coordinator.async_update_listeners()
-        if new_day and runtime.timetable is not None:
+        # Not while the timetable is failing: that would cut its backoff short.
+        if new_day and runtime.timetable is not None and not runtime.timetable.failures:
             entry.async_create_background_task(
                 hass,
                 runtime.timetable.async_request_refresh(),

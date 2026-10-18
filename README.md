@@ -165,7 +165,7 @@ automation:
           message: "Catering balance is £{{ states('sensor.alex_catering_balance') }}"
 ```
 
-After any failed update the integration retries within 15 minutes. If one child's data fails to load, the other children are unaffected and the failing child keeps their last values. Clubs, school record and account counts are optional: if one of them fails, its entities are unavailable until it recovers, and the rest of the integration loads as normal.
+After a failed update the integration retries after 15 minutes, doubling the wait after each further failure up to 2 hours (or the module's normal interval, if longer). If Edulink rate-limits a request, nothing more is sent for that module until the wait Edulink asks for has passed. If one child's data fails to load, the other children are unaffected and the failing child keeps their last values. Clubs, school record and account counts are optional: if one of them fails, its entities are unavailable until it recovers, and the rest of the integration loads as normal.
 
 ## Privacy
 

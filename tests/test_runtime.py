@@ -22,6 +22,7 @@ from custom_components.edulink.const import (
     RETRY_INTERVAL,
     STATUS_INTERVAL,
 )
+from custom_components.edulink.coordinator import retry_delay
 from custom_components.edulink.models import SCHOOL_TZ
 
 from .conftest import NOW, FakeEdulink, load
@@ -300,6 +301,91 @@ async def test_next_club_session_moves_on_when_a_session_starts(
     assert session.state == "2026-10-20T14:15:00+00:00"
     assert session.attributes["club"] == "Chess Club"
     assert fake.methods().count("EduLink.Clubs") == polls
+
+
+def test_retry_delay_backs_off() -> None:
+    """Failures in a row double the delay, up to the longer of 2 h or normal."""
+    minutes = [
+        retry_delay(n, timedelta(minutes=15)) / timedelta(minutes=1)
+        for n in range(1, 7)
+    ]
+    assert minutes == [15, 30, 60, 120, 120, 120]
+    assert retry_delay(7, RECORD_INTERVAL) == RECORD_INTERVAL
+    assert retry_delay(3, RECORD_INTERVAL) == timedelta(hours=1)
+    # Edulink's Retry-After wins when longer, up to a day.
+    assert retry_delay(1, timedelta(minutes=15), timedelta(hours=3)) == timedelta(
+        hours=3
+    )
+    assert retry_delay(1, timedelta(minutes=15), timedelta(days=9)) == timedelta(days=1)
+    assert retry_delay(3, timedelta(minutes=15), timedelta(minutes=1)) == timedelta(
+        hours=1
+    )
+
+
+async def test_failures_back_off_and_reset(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Repeated catering failures wait longer each time; success resets."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    catering = entry.runtime_data.catering
+    fake.network_errors.add("EduLink.Catering")
+    for expected in (15, 30, 60):
+        freezer.tick(catering.update_interval)
+        async_fire_time_changed(hass)
+        await hass.async_block_till_done()
+        assert catering.update_interval == timedelta(minutes=expected)
+
+    fake.network_errors.clear()
+    freezer.tick(catering.update_interval)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert catering.failures == 0
+    assert catering.last_update_success
+
+
+async def test_rate_limit_stops_calls_and_honours_retry_after(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    two_learner_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A 429 for one child skips the other and waits as long as asked."""
+    freezer.move_to(NOW)
+    await _setup(hass, two_learner_entry)
+    catering = two_learner_entry.runtime_data.catering
+    fake.rate_limits[("EduLink.Catering", "7001")] = "3600"
+    fake.calls.clear()
+
+    freezer.tick(catering.update_interval)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    assert [p["learner_id"] for m, p in fake.calls if m == "EduLink.Catering"] == [
+        "7001"
+    ]
+    assert catering.update_interval == timedelta(hours=1)
+
+
+async def test_status_rate_limit_honours_retry_after(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """The unread counts wait as long as Edulink asks."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    status = entry.runtime_data.status
+    fake.rate_limits["EduLink.Status"] = "7200"
+    freezer.tick(status.update_interval)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert status.update_interval == timedelta(hours=2)
+    assert not status.last_update_success
 
 
 async def test_slow_module_intervals(

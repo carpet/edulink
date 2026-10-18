@@ -11,7 +11,8 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
+from email.utils import parsedate_to_datetime
 import logging
 from typing import Any
 import uuid
@@ -28,6 +29,10 @@ TIMEOUT = aiohttp.ClientTimeout(total=30)
 ERR_NOT_LOGGED_IN = "You are not logged in"
 ERR_NO_AUTHTOKEN = "Authtoken not present"
 ERR_NOT_AUTHORISED = "You are not authorised"
+# Wrong username and wrong password both give "Login failed: The username or
+# password is incorrect. ..." (checked 2026-10-18). Other login errors, such as
+# throttling, are treated as temporary rather than as bad credentials.
+ERR_LOGIN_FAILED = "Login failed"
 
 
 class EdulinkError(Exception):
@@ -36,6 +41,15 @@ class EdulinkError(Exception):
 
 class EdulinkConnectionError(EdulinkError):
     """Network failure, timeout or unparseable response."""
+
+
+class EdulinkRateLimitError(EdulinkConnectionError):
+    """Edulink asked us to slow down (HTTP 429)."""
+
+    def __init__(self, message: str, retry_after: timedelta | None) -> None:
+        """Initialise with the wait Edulink asked for, if it gave one."""
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 class EdulinkAuthError(EdulinkError):
@@ -124,6 +138,11 @@ async def _post(
         async with session.post(
             f"{url}?method={method}", json=payload, headers=headers, timeout=TIMEOUT
         ) as resp:
+            if resp.status == 429:
+                raise EdulinkRateLimitError(
+                    f"{method}: rate limited",
+                    _retry_after(resp.headers.get("Retry-After")),
+                )
             resp.raise_for_status()
             body = await resp.json(content_type=None)
     except (aiohttp.ClientError, TimeoutError, ValueError) as err:
@@ -141,6 +160,22 @@ async def _post(
     if error.startswith(ERR_NOT_AUTHORISED):
         raise EdulinkPermissionError(f"{method}: {error}")
     raise EdulinkError(f"{method}: {error}")
+
+
+def _retry_after(value: str | None) -> timedelta | None:
+    """Parse a Retry-After header: delay in seconds, or an HTTP date."""
+    if not value:
+        return None
+    value = value.strip()
+    if value.isdigit():
+        return timedelta(seconds=int(value))
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if when.tzinfo is None:
+        return None
+    return max(when - datetime.now(UTC), timedelta(0))
 
 
 async def find_school(session: aiohttp.ClientSession, code: str) -> SchoolLookup:
@@ -213,10 +248,10 @@ class EdulinkClient:
                     "password": self._password,
                 },
             )
-        except EdulinkConnectionError:
-            raise
         except EdulinkError as err:
-            raise EdulinkAuthError(str(err)) from err
+            if str(err).startswith(f"EduLink.Login: {ERR_LOGIN_FAILED}"):
+                raise EdulinkAuthError(str(err)) from err
+            raise
 
         token = result.get("authtoken")
         if not token:

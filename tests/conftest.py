@@ -30,7 +30,12 @@ from custom_components.edulink.const import (
 FIXTURES = Path(__file__).parent / "fixtures"
 SERVER = "https://www9.edulinkone.com/api/"
 PROVISIONING = "https://provisioning.edulinkone.com/"
-NOW = "2026-10-16 10:00:00+01:00"  # Friday, period 2 (English)
+NOW = "2026-10-16 10:00:00+01:00"
+# Edulink's response to a wrong username or password.
+LOGIN_FAILED = (
+    "Login failed: The username or password is incorrect. "
+    "Please try typing your password again"
+)  # Friday, period 2 (English)
 
 
 def load(name: str) -> dict[str, Any]:
@@ -85,6 +90,9 @@ class FakeEdulink:
         self.learner_errors: dict[tuple[str, str], str] = {}
         self.errors: dict[str, str] = {}
         self.network_errors: set[str] = set()
+        # HTTP 429 responses, keyed by method or (method, learner_id), with
+        # the Retry-After header value or None for no header.
+        self.rate_limits: dict[str | tuple[str, str], str | None] = {}
         # Session state: Login opens a session, Logout or expire() ends it.
         self.logged_in = False
         # Simulate a server that rejects every session, even straight after login.
@@ -108,6 +116,15 @@ class FakeEdulink:
         key = (rpc, str(params.get("learner_id")))
         if rpc in self.network_errors:
             return AiohttpClientMockResponse(method, url, exc=aiohttp.ClientError())
+        for limited in (key, rpc):
+            if limited in self.rate_limits:
+                retry_after = self.rate_limits[limited]
+                return AiohttpClientMockResponse(
+                    method,
+                    url,
+                    status=429,
+                    headers={"Retry-After": retry_after} if retry_after else None,
+                )
         if rpc in self.errors:
             return self._error(method, url, rpc, self.errors[rpc])
         if rpc == "EduLink.Login":

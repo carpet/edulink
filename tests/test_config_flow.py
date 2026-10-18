@@ -23,7 +23,7 @@ from custom_components.edulink.const import (
     DOMAIN,
 )
 
-from .conftest import NOW, SERVER, FakeEdulink
+from .conftest import LOGIN_FAILED, NOW, SERVER, FakeEdulink
 
 CREDS = {"username": "p_example", "password": "secret"}
 
@@ -118,10 +118,14 @@ async def test_sso_only_school(hass: HomeAssistant, fake: FakeEdulink) -> None:
     ("setup", "error"),
     [
         (
-            lambda f: f.errors.__setitem__("EduLink.Login", "Login failed"),
+            lambda f: f.errors.__setitem__("EduLink.Login", LOGIN_FAILED),
             "invalid_auth",
         ),
         (lambda f: f.network_errors.add("EduLink.Login"), "cannot_connect"),
+        (
+            lambda f: f.errors.__setitem__("EduLink.Login", "Service unavailable"),
+            "unknown",
+        ),
     ],
 )
 async def test_login_errors(
