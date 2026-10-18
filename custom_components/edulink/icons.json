@@ -41,6 +41,7 @@
       "behaviour_events": { "default": "mdi:alert-circle-outline" },
       "last_behaviour_event": { "default": "mdi:calendar-alert" },
       "last_absence": { "default": "mdi:account-cancel-outline" },
+      "club": { "default": "mdi:account-group" },
       "next_club_session": { "default": "mdi:account-group" },
       "new_messages": { "default": "mdi:email-outline" },
       "new_forms": { "default": "mdi:form-select" },

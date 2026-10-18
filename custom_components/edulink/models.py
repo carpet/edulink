@@ -614,12 +614,24 @@ class ClubSession:
     location: str = ""
 
 
+@dataclass(slots=True, frozen=True)
+class Club:
+    """A club the learner belongs to, with Edulink's id for it."""
+
+    id: str
+    name: str
+    location: str
+    next_session: datetime | None
+
+
 @dataclass(slots=True)
 class Clubs:
     """Clubs the learner belongs to, and their next sessions."""
 
     names: list[str] = field(default_factory=list)
     sessions: list[ClubSession] = field(default_factory=list)
+    # Only clubs with an id, which per-club entities need; first wins.
+    by_id: dict[str, Club] = field(default_factory=dict)
 
     def upcoming(self, now: datetime) -> list[ClubSession]:
         """Sessions starting after now, earliest first."""
@@ -640,15 +652,18 @@ def parse_clubs(result: dict[str, Any]) -> Clubs:
         if raw.get("deleted") is True:
             continue
         name = _str(raw.get("name")).strip()
+        location = _str(raw.get("location")).strip()
+        start = _parse_dt(raw.get("next_session"))
         if name:
             clubs.names.append(name)
-        if start := _parse_dt(raw.get("next_session")):
+        if start:
             clubs.sessions.append(
-                ClubSession(
-                    club=name,
-                    start=start,
-                    location=_str(raw.get("location")).strip(),
-                )
+                ClubSession(club=name, start=start, location=location)
+            )
+        club_id = _str(raw.get("id")).strip()
+        if club_id and name and club_id not in clubs.by_id:
+            clubs.by_id[club_id] = Club(
+                id=club_id, name=name, location=location, next_session=start
             )
     return clubs
 

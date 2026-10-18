@@ -404,6 +404,19 @@ def test_record_parsers_tolerate_malformed_fields() -> None:
         }
     )
     assert (clubs.names, clubs.sessions) == (["X"], [])
+    clubs = parse_clubs(
+        {
+            "clubs": [
+                {"name": "No id"},
+                {"id": "1", "name": "First"},
+                {"id": "1", "name": "Duplicate"},
+                {"id": "2", "name": ""},
+            ]
+        }
+    )
+    assert list(clubs.by_id) == ["1"]
+    assert clubs.by_id["1"].name == "First"
+    assert clubs.by_id["1"].next_session is None
     assert parse_status({"noticeboard": [], "new_messages": "2"}) == parse_status(
         {"new_messages": 2}
     )

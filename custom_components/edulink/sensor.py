@@ -13,10 +13,12 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.typing import StateType
 
+from .api import Learner
 from .const import (
     CONF_ACADEMIC_YEAR_START,
     CONF_HOMEWORK_DAYS_AHEAD,
@@ -27,12 +29,13 @@ from .const import (
     DEFAULT_KIT_RULES,
     OVERDUE_WINDOW_DAYS,
 )
-from .coordinator import EdulinkConfigEntry, school_now
+from .coordinator import EdulinkConfigEntry, EdulinkCoordinator, school_now
 from .entity import EdulinkAccountEntity, EdulinkEntity
 from .models import (
     SCHOOL_TZ,
     Attendance,
     Catering,
+    Club,
     Clubs,
     Homework,
     HomeworkList,
@@ -462,6 +465,85 @@ CLUB_SENSORS: tuple[EdulinkSensorDescription[Clubs], ...] = (
     ),
 )
 
+
+def _club_description(club_id: str) -> EdulinkSensorDescription[Clubs]:
+    def value(c: Clubs, now: datetime) -> datetime | None:
+        # As with next_club_session, a session that has started is dropped:
+        # Edulink only says when the next one is at the next poll.
+        club = c.by_id.get(club_id)
+        if club and club.next_session and club.next_session > now:
+            return club.next_session
+        return None
+
+    def attrs(c: Clubs, _now: datetime) -> dict[str, Any] | None:
+        club = c.by_id.get(club_id)
+        return {"location": club.location or None} if club else None
+
+    return EdulinkSensorDescription(
+        key=f"club_{club_id}",
+        translation_key="club",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=value,
+        attrs_fn=attrs,
+    )
+
+
+@callback
+def _async_track_clubs(
+    hass: HomeAssistant,
+    entry: EdulinkConfigEntry,
+    coordinator: EdulinkCoordinator[Clubs],
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    """Add a sensor per club as clubs appear, and remove clubs a learner left."""
+    runtime = entry.runtime_data
+    registry = er.async_get(hass)
+    added: set[str] = set()
+    last: dict[str, Clubs] | None = None
+
+    @callback
+    def _sync() -> None:
+        nonlocal last
+        # Listeners also fire on every clock tick; only act on new data.
+        if not coordinator.data or coordinator.data is last:
+            return
+        last = coordinator.data
+        current: set[str] = set()
+        new: list[SensorEntity] = []
+        for learner in runtime.learners:
+            if (clubs := coordinator.data.get(learner.id)) is None:
+                continue
+            for club in clubs.by_id.values():
+                unique_id = _club_unique_id(runtime.establishment_id, learner.id, club)
+                current.add(unique_id)
+                if unique_id not in added:
+                    added.add(unique_id)
+                    new.append(EdulinkClubSensor(coordinator, learner, club))
+        if new:
+            async_add_entities(new)
+        # Only learners with data: a learner whose clubs never loaded keeps
+        # their entities until they do.
+        prefixes = tuple(
+            f"{runtime.establishment_id}_{learner_id}_club_"
+            for learner_id in coordinator.data
+        )
+        for reg_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+            if (
+                reg_entry.domain == "sensor"
+                and reg_entry.unique_id.startswith(prefixes)
+                and reg_entry.unique_id not in current
+            ):
+                registry.async_remove(reg_entry.entity_id)
+                added.discard(reg_entry.unique_id)
+
+    _sync()
+    entry.async_on_unload(coordinator.async_add_listener(_sync))
+
+
+def _club_unique_id(establishment_id: str, learner_id: str, club: Club) -> str:
+    return f"{establishment_id}_{learner_id}_club_{club.id}"
+
+
 # ------------------------------------------------------------------- status
 
 
@@ -541,6 +623,8 @@ async def async_setup_entry(
             for description in STATUS_SENSORS
         )
     async_add_entities(entities)
+    if runtime.clubs is not None:
+        _async_track_clubs(hass, entry, runtime.clubs, async_add_entities)
 
 
 class EdulinkSensor[T](EdulinkEntity[T], SensorEntity):
@@ -567,6 +651,30 @@ class EdulinkSensor[T](EdulinkEntity[T], SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return extra attributes."""
         return self.entity_description.attrs_fn(self.learner_data, school_now())
+
+
+class EdulinkClubSensor(EdulinkSensor[Clubs]):
+    """The next session of one club, named after the club."""
+
+    def __init__(
+        self, coordinator: EdulinkCoordinator[Clubs], learner: Learner, club: Club
+    ) -> None:
+        """Initialise the sensor."""
+        super().__init__(coordinator, learner, _club_description(club.id))
+        self.club_id = club.id
+        self._attr_name = club.name
+
+    @property
+    def available(self) -> bool:
+        """Unavailable once the club is gone, until the entity is removed."""
+        return super().available and self.club_id in self.learner_data.by_id
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        # Follow a rename; the unique id, and so the entity id, stay the same.
+        if self.available:
+            self._attr_name = self.learner_data.by_id[self.club_id].name
+        super()._handle_coordinator_update()
 
 
 class EdulinkStatusSensor(EdulinkAccountEntity, SensorEntity):

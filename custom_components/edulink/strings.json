@@ -182,6 +182,9 @@
       "last_absence": {
         "name": "Last absence"
       },
+      "club": {
+        "name": "Club"
+      },
       "next_club_session": {
         "name": "Next club session"
       },

@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 import pytest
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -306,6 +307,68 @@ async def test_next_club_session_moves_on_when_a_session_starts(
     assert session.attributes["club"] == "Chess Club"
     assert [s["club"] for s in session.attributes["sessions"]] == ["Chess Club"]
     assert fake.methods().count("EduLink.Clubs") == polls
+
+
+async def test_club_sensors_follow_membership(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A joined club gets a sensor, a left club's is removed, renames follow."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    registry = er.async_get(hass)
+    assert registry.async_get("sensor.alex_choir") is not None
+
+    clubs = load("clubs.json")
+    clubs["result"]["clubs"][0]["name"] = "Chess and Draughts"
+    clubs["result"]["clubs"][1] = {
+        "id": "44",
+        "name": "Coding Club",
+        "deleted": False,
+        "location": "",
+        "next_session": "2026-10-21 15:15:00",
+    }
+    fake.responses["EduLink.Clubs"] = clubs
+    await entry.runtime_data.clubs.async_refresh()
+    await hass.async_block_till_done()
+
+    assert registry.async_get("sensor.alex_choir") is None
+    assert hass.states.get("sensor.alex_choir") is None
+    coding = hass.states.get("sensor.alex_coding_club")
+    assert coding.state == "2026-10-21T14:15:00+00:00"
+    assert coding.attributes["location"] is None
+    chess = hass.states.get("sensor.alex_chess_club")
+    assert chess.attributes["friendly_name"] == "Alex Chess and Draughts"
+
+    # Clock ticks re-run the listener without adding the clubs again.
+    freezer.tick(timedelta(minutes=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert len(hass.states.async_entity_ids("sensor")) == len(
+        [
+            e
+            for e in registry.entities.values()
+            if e.domain == "sensor" and not e.disabled
+        ]
+    )
+
+
+async def test_club_sensors_kept_while_clubs_fail(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A failed clubs poll removes nothing; the sensors go unavailable."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    fake.errors["EduLink.Clubs"] = "Something went wrong"
+    await entry.runtime_data.clubs.async_refresh()
+    await hass.async_block_till_done()
+    assert er.async_get(hass).async_get("sensor.alex_chess_club") is not None
+    assert _state(hass, "sensor.alex_chess_club") == "unavailable"
 
 
 def test_retry_delay_backs_off() -> None:

@@ -328,6 +328,16 @@ async def test_club_and_status_entities(
             "location": "Library",
         }
     ]
+
+    chess = state(hass, "sensor.alex_chess_club")
+    assert chess.state == "2026-10-20T14:15:00+00:00"
+    assert chess.attributes["location"] == "Library"
+    assert chess.attributes["friendly_name"] == "Alex Chess Club"
+    assert er.async_get(hass).async_get(chess.entity_id).unique_id == "999_7001_club_41"
+    # Choir's session this morning has started; Edulink gives the next at the
+    # next poll.
+    assert state(hass, "sensor.alex_choir").state == "unknown"
+    assert hass.states.get("sensor.alex_old_club") is None
     assert state(hass, "sensor.edulink_one_new_messages").state == "2"
     assert state(hass, "sensor.edulink_one_new_forms").state == "1"
     assert state(hass, "sensor.edulink_one_new_noticeboard_items").state == "3"

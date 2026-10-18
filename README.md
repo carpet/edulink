@@ -71,6 +71,7 @@ One device per child. Entities are only created for modules your school has enab
 | Entity | Description |
 |---|---|
 | `sensor.<child>_next_club_session` | Start of the next session of a club the child belongs to. Attributes: `club`, `clubs` (names of the child's clubs), `sessions` (each club's next session still to come, earliest first: `club`, `start`, `location`). Edulink only gives the next session of each club, not a schedule |
+| `sensor.<child>_<club name>` | One per club the child belongs to, named after the club: start of its next session. Attribute `location`. Unknown once a session starts, until Edulink gives the next one at the following poll. Sensors are added when the child joins a club and removed when they leave |
 
 **School record** (every 12 hours. Disabled by default: enable them under the child's device if you want them)
 
