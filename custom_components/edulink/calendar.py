@@ -12,6 +12,7 @@ from homeassistant.components.calendar import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from .const import CONF_CALENDAR_SUBMITTED, DEFAULT_CALENDAR_SUBMITTED
 from .coordinator import EdulinkConfigEntry, school_now
 from .entity import EdulinkEntity
 from .models import HomeworkList, Timetable
@@ -131,9 +132,12 @@ class TimetableCalendar(_EdulinkCalendar[Timetable]):
 
 
 class HomeworkCalendar(_EdulinkCalendar[HomeworkList]):
-    """All-day events on homework due dates."""
+    """All-day events on homework due dates, leaving out submitted work by default."""
 
     def _build(self, data: HomeworkList) -> list[CalendarEvent]:
+        show_submitted = self.coordinator.config_entry.options.get(
+            CONF_CALENDAR_SUBMITTED, DEFAULT_CALENDAR_SUBMITTED
+        )
         return [
             CalendarEvent(
                 start=hw.due,
@@ -147,4 +151,5 @@ class HomeworkCalendar(_EdulinkCalendar[HomeworkList]):
                 uid=f"{self.learner.id}_{hw.id}",
             )
             for hw in (*data.current, *data.past)
+            if show_submitted or not hw.completed
         ]

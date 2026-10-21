@@ -16,6 +16,7 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -39,6 +40,7 @@ from .api import (
 )
 from .const import (
     CONF_ACADEMIC_YEAR_START,
+    CONF_CALENDAR_SUBMITTED,
     CONF_CATERING_INTERVAL,
     CONF_ESTABLISHMENT_ID,
     CONF_HOMEWORK_DAYS_AHEAD,
@@ -51,6 +53,7 @@ from .const import (
     CONF_SERVER,
     CONF_USER_ID,
     DEFAULT_ACADEMIC_YEAR_START,
+    DEFAULT_CALENDAR_SUBMITTED,
     DEFAULT_CATERING_INTERVAL,
     DEFAULT_HOMEWORK_DAYS_AHEAD,
     DEFAULT_HOMEWORK_INTERVAL,
@@ -308,6 +311,9 @@ class EdulinkOptionsFlow(OptionsFlowWithReload):
                         mode=NumberSelectorMode.BOX,
                     )
                 ),
+                vol.Required(
+                    CONF_CALENDAR_SUBMITTED, default=DEFAULT_CALENDAR_SUBMITTED
+                ): BooleanSelector(),
                 vol.Optional(CONF_KIT_RULES): TextSelector(
                     TextSelectorConfig(multiline=True)
                 ),

@@ -53,7 +53,7 @@ One device per child. Entities are only created for modules your school has enab
 | `sensor.<child>_next_homework_due` | Earliest due date, with subject, task, status and description |
 | `sensor.<child>_overdue_homework` | Disabled by default. Incomplete homework due in the last 14 days. Many schools do not track submission in Edulink, so this can be noisy |
 | `todo.<child>_homework` | Current homework as a to-do list. Ticking an item marks it submitted in Edulink, and unticking it reverses that. Nothing else about an item can be edited |
-| `calendar.<child>_homework` | All-day events on due dates |
+| `calendar.<child>_homework` | All-day events on due dates. Homework marked submitted is left out unless you turn on "Show submitted homework in the calendar" in the options |
 
 **Catering** (every 15 minutes 07:30 to 16:00 on school days, otherwise every 2 hours. School holidays are taken from the timetable, so catering polls slowly during half-term)
 
@@ -104,6 +104,7 @@ Edulink returns the catering balance in pounds, as a whole number when there are
 - Low-balance threshold (default £5).
 - Homework update interval (default 30 minutes).
 - Outstanding homework look-ahead: how many days ahead the outstanding homework and urgency sensors look (default 7).
+- Show submitted homework in the calendar (default off).
 - Kit reminders: one `subject keyword = item` rule per line. A keyword matches whole words in a lesson's subject, ignoring case. The defaults are:
   ```
   Physical Education = PE kit

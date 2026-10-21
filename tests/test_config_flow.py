@@ -14,6 +14,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.edulink.const import (
     CONF_ACADEMIC_YEAR_START,
+    CONF_CALENDAR_SUBMITTED,
     CONF_CATERING_INTERVAL,
     CONF_HOMEWORK_DAYS_AHEAD,
     CONF_HOMEWORK_INTERVAL,
@@ -204,11 +205,13 @@ async def test_options(
             CONF_KIT_RULES: "Drama = Script",
             CONF_CATERING_INTERVAL: 30,
             CONF_ACADEMIC_YEAR_START: 10,
+            CONF_CALENDAR_SUBMITTED: True,
         },
     )
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_LOW_BALANCE] == 20
+    assert entry.options[CONF_CALENDAR_SUBMITTED] is True
     # Reloaded with the new options: £11 is now low, and February homework counts.
     assert hass.states.get("binary_sensor.alex_low_catering_balance").state == "on"
     assert hass.states.get("sensor.alex_homework_outstanding").state == "4"

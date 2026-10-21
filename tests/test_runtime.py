@@ -19,6 +19,7 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.edulink.const import (
     CONF_ACADEMIC_YEAR_START,
+    CONF_CALENDAR_SUBMITTED,
     DOMAIN,
     OFF_HOURS_INTERVAL,
     RECORD_INTERVAL,
@@ -587,6 +588,46 @@ async def test_calendar_events_in_range(
     ]
     assert events[0]["start"] == "2026-10-17"
     assert events[0]["end"] == "2026-10-18"
+
+
+async def _homework_calendar_summaries(hass: HomeAssistant) -> list[str]:
+    result = await hass.services.async_call(
+        "calendar",
+        "get_events",
+        {
+            "entity_id": "calendar.alex_homework",
+            "start_date_time": "2026-10-01 00:00:00+01:00",
+            "end_date_time": "2027-03-01 00:00:00+00:00",
+        },
+        blocking=True,
+        return_response=True,
+    )
+    return [e["summary"] for e in result["calendar.alex_homework"]["events"]]
+
+
+async def test_homework_calendar_leaves_out_submitted_by_default(
+    hass: HomeAssistant, entry: MockConfigEntry, freezer: FrozenDateTimeFactory
+) -> None:
+    """Homework marked submitted does not appear in the calendar."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    summaries = await _homework_calendar_summaries(hass)
+    assert "History: History task 104" not in summaries
+    assert "English: English task 101" in summaries
+
+
+async def test_homework_calendar_option_shows_submitted(
+    hass: HomeAssistant, entry: MockConfigEntry, freezer: FrozenDateTimeFactory
+) -> None:
+    """The option brings submitted homework back."""
+    freezer.move_to(NOW)
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry, options={CONF_CALENDAR_SUBMITTED: True}
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert "History: History task 104" in await _homework_calendar_summaries(hass)
 
 
 async def test_todo_items(
