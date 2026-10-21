@@ -321,7 +321,11 @@ async def test_club_and_status_entities(
     assert club.state == "2026-10-20T14:15:00+00:00"
     assert club.attributes["club"] == "Chess Club"
     assert club.attributes["clubs"] == ["Chess Club", "Choir"]
-    assert club.attributes["sessions"] == [
+    assert "sessions" not in club.attributes
+
+    sessions = state(hass, "sensor.alex_club_sessions")
+    assert sessions.state == "1"
+    assert sessions.attributes["sessions"] == [
         {
             "club": "Chess Club",
             "start": "2026-10-20T15:15:00+01:00",

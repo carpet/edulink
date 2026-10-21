@@ -188,6 +188,9 @@
       "next_club_session": {
         "name": "Next club session"
       },
+      "club_sessions": {
+        "name": "Club sessions"
+      },
       "new_messages": {
         "name": "New messages"
       },

@@ -442,16 +442,21 @@ def _next_club_attrs(c: Clubs, now: datetime) -> dict[str, Any]:
     return {
         "club": upcoming[0].club if upcoming else None,
         "clubs": c.names,
-        # Edulink only gives each club's next session, so this is at most one
-        # per club.
+    }
+
+
+def _club_sessions_attrs(c: Clubs, now: datetime) -> dict[str, Any]:
+    # Edulink only gives each club's next session, so this is at most one per
+    # club.
+    return {
         "sessions": [
             {
                 "club": s.club,
                 "start": s.start.isoformat(),
                 "location": s.location or None,
             }
-            for s in upcoming
-        ],
+            for s in c.upcoming(now)
+        ]
     }
 
 
@@ -462,6 +467,15 @@ CLUB_SENSORS: tuple[EdulinkSensorDescription[Clubs], ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         value_fn=lambda c, now: s.start if (s := c.next_session(now)) else None,
         attrs_fn=_next_club_attrs,
+    ),
+    EdulinkSensorDescription(
+        # Not "club_sessions": unique ids starting "club_" belong to the
+        # per-club sensors, and a leaving club's cleanup would remove this one.
+        key="upcoming_club_sessions",
+        translation_key="club_sessions",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda c, now: len(c.upcoming(now)),
+        attrs_fn=_club_sessions_attrs,
     ),
 )
 

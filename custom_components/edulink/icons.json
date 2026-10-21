@@ -43,6 +43,7 @@
       "last_absence": { "default": "mdi:account-cancel-outline" },
       "club": { "default": "mdi:account-group" },
       "next_club_session": { "default": "mdi:account-group" },
+      "club_sessions": { "default": "mdi:calendar-clock" },
       "new_messages": { "default": "mdi:email-outline" },
       "new_forms": { "default": "mdi:form-select" },
       "new_noticeboard_items": { "default": "mdi:bulletin-board" }
