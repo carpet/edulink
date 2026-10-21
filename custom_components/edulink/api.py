@@ -327,6 +327,21 @@ class EdulinkClient:
             {"homework_id": homework_id, "source": source, "learner_id": learner_id},
         )
 
+    async def homework_completed(
+        self, learner_id: str, homework_id: str, source: str, completed: bool
+    ) -> dict[str, Any]:
+        """Mark homework submitted or not submitted. The only write call here."""
+        return await self.call(
+            "EduLink.HomeworkCompleted",
+            {
+                # The website sends the flag as a string.
+                "completed": "true" if completed else "false",
+                "homework_id": homework_id,
+                "learner_id": learner_id,
+                "source": source,
+            },
+        )
+
     async def catering(self, learner_id: str) -> dict[str, Any]:
         """Catering balance and recent transactions."""
         return await self.call("EduLink.Catering", {"learner_id": learner_id})

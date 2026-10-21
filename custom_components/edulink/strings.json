@@ -203,5 +203,16 @@
         "name": "Homework"
       }
     }
+  },
+  "exceptions": {
+    "homework_not_found": {
+      "message": "This homework is no longer in Edulink's current list."
+    },
+    "homework_only_status": {
+      "message": "Only the done status of homework can be changed."
+    },
+    "homework_update_failed": {
+      "message": "Edulink did not accept the change: {error}"
+    }
   }
 }

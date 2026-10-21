@@ -143,9 +143,21 @@ class FakeEdulink:
             return AiohttpClientMockResponse(
                 method, url, json=self.learner_responses[key]
             )
+        if rpc == "EduLink.HomeworkCompleted":
+            self._set_completed(params)
+            return AiohttpClientMockResponse(
+                method, url, json={"result": {"success": True}}
+            )
         if rpc not in self.responses:
             return self._error(method, url, rpc, f"Invalid API method {rpc}")
         return AiohttpClientMockResponse(method, url, json=self.responses[rpc])
+
+    def _set_completed(self, params: dict[str, Any]) -> None:
+        """Apply a HomeworkCompleted call to the homework the fake serves."""
+        homework = self.responses["EduLink.Homework"]["result"]["homework"]
+        for hw in homework["current"]:
+            if hw["id"] == params["homework_id"]:
+                hw["completed"] = params["completed"] == "true"
 
     @staticmethod
     def _error(method: str, url: Any, rpc: str, error: str):

@@ -6,8 +6,10 @@ import copy
 from datetime import datetime, timedelta
 
 from freezegun.api import FrozenDateTimeFactory
+from homeassistant.components.todo import TodoItem, TodoItemStatus
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -606,6 +608,133 @@ async def test_todo_items(
     ]
     assert items[0]["summary"] == "English: English task 101"
     assert items[0]["description"] == "Read chapter 3\nAnswer questions 1-4"
+
+
+async def _todo_update(hass: HomeAssistant, uid: str, **data: str) -> None:
+    await hass.services.async_call(
+        "todo",
+        "update_item",
+        {"entity_id": "todo.alex_homework", "item": uid, **data},
+        blocking=True,
+    )
+
+
+async def _todo_status(hass: HomeAssistant, uid: str) -> str:
+    result = await hass.services.async_call(
+        "todo",
+        "get_items",
+        {"entity_id": "todo.alex_homework"},
+        blocking=True,
+        return_response=True,
+    )
+    items = result["todo.alex_homework"]["items"]
+    return next(i["status"] for i in items if i["uid"] == uid)
+
+
+def _completed_calls(fake: FakeEdulink) -> list[dict[str, str]]:
+    return [p for m, p in fake.calls if m == "EduLink.HomeworkCompleted"]
+
+
+async def test_todo_tick_marks_homework_submitted(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Completing an item calls Edulink, then shows the refreshed status."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    await _todo_update(hass, "101", status="completed")
+    await hass.async_block_till_done()
+    assert _completed_calls(fake) == [
+        {
+            "completed": "true",
+            "homework_id": "101",
+            "learner_id": "7001",
+            "source": "EduLink",
+        }
+    ]
+    assert await _todo_status(hass, "101") == "completed"
+    assert _state(hass, "sensor.alex_homework_outstanding") == "2"
+
+
+async def test_todo_untick_marks_homework_not_submitted(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Un-completing an item sends completed "false"."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    await _todo_update(hass, "104", status="needs_action")
+    await hass.async_block_till_done()
+    assert [c["completed"] for c in _completed_calls(fake)] == ["false"]
+    assert await _todo_status(hass, "104") == "needs_action"
+
+
+async def test_todo_no_change_makes_no_call(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Setting the status an item already has does not write to Edulink."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    await _todo_update(hass, "104", status="completed")
+    assert _completed_calls(fake) == []
+
+
+async def test_todo_only_status_can_change(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Renaming, re-dating or re-describing an item is refused."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    for change in (
+        {"rename": "Something else"},
+        {"due_date": "2026-12-01"},
+        {"description": "Edited"},
+    ):
+        with pytest.raises(ServiceValidationError):
+            await _todo_update(hass, "101", status="completed", **change)
+    assert _completed_calls(fake) == []
+
+
+async def test_todo_item_no_longer_current(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """An item that has left Edulink's list cannot be completed."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    todo = hass.data["entity_components"]["todo"].get_entity("todo.alex_homework")
+    with pytest.raises(ServiceValidationError):
+        await todo.async_update_todo_item(
+            TodoItem(uid="999", status=TodoItemStatus.COMPLETED)
+        )
+    assert _completed_calls(fake) == []
+
+
+async def test_todo_edulink_refusal_is_reported(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """If Edulink refuses, the user sees an error and the item is unchanged."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    fake.errors["EduLink.HomeworkCompleted"] = NOT_AUTHORISED
+    with pytest.raises(HomeAssistantError, match="did not accept"):
+        await _todo_update(hass, "101", status="completed")
+    assert await _todo_status(hass, "101") == "needs_action"
 
 
 async def test_homework_description_cache_is_pruned(

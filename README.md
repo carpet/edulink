@@ -4,7 +4,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/carpet/edulink)](https://github.com/carpet/edulink/releases)
 [![Validate](https://github.com/carpet/edulink/actions/workflows/validate.yml/badge.svg)](https://github.com/carpet/edulink/actions/workflows/validate.yml)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.10%2B-41BDF5?logo=home-assistant)](https://www.home-assistant.io/)
-[![License](https://img.shields.io/github/license/carpet/edulink)](LICENSE)
+[![License](https://img.shields.io/github/license/carpet/edulink)](https://github.com/carpet/edulink/blob/main/LICENSE)
 
 Unofficial Home Assistant integration for [Edulink One](https://www.edulinkone.com/), the UK school parent/learner portal. Provides homework, timetable, catering and clubs sensors, optional achievement, behaviour and attendance sensors, unread message counts, plus calendars and a homework to-do list, for each child on a parent account (or for a learner's own account).
 
@@ -52,7 +52,7 @@ One device per child. Entities are only created for modules your school has enab
 | `sensor.<child>_homework_due_today` / `_due_tomorrow` | Outstanding homework due that day |
 | `sensor.<child>_next_homework_due` | Earliest due date, with subject, task, status and description |
 | `sensor.<child>_overdue_homework` | Disabled by default. Incomplete homework due in the last 14 days. Many schools do not track submission in Edulink, so this can be noisy |
-| `todo.<child>_homework` | Current homework as a read-only to-do list |
+| `todo.<child>_homework` | Current homework as a to-do list. Ticking an item marks it submitted in Edulink, and unticking it reverses that. Nothing else about an item can be edited |
 | `calendar.<child>_homework` | All-day events on due dates |
 
 **Catering** (every 15 minutes 07:30 to 16:00 on school days, otherwise every 2 hours. School holidays are taken from the timetable, so catering polls slowly during half-term)
@@ -170,7 +170,7 @@ After a failed update the integration retries after 15 minutes, doubling the wai
 
 ## Privacy
 
-The integration reads timetable, homework, catering and clubs data, account unread counts, and, if the school enables them, achievement, behaviour and attendance records. It never reads medical, personal or document data.
+The integration is read-only apart from one action: ticking or unticking a homework item in the to-do list marks it submitted or not submitted in Edulink, as the Edulink website does. It reads timetable, homework, catering and clubs data, account unread counts, and, if the school enables them, achievement, behaviour and attendance records. It never reads medical, personal or document data.
 
 Achievement, behaviour and attendance entities are disabled by default, so nothing about a child's school record is stored until you enable them. They expose counts, points and dates only.
 
