@@ -40,7 +40,7 @@ One device per child. Entities are only created for modules your school has enab
 | `sensor.<child>_lessons_today` / `_lessons_tomorrow` | Number of lessons that day (0 at weekends and holidays). Attribute `lessons` |
 | `sensor.<child>_timetable_week` | Week letter for schools on a multi-week cycle (A/B), for the current or next school day |
 | `sensor.<child>_kit_today` / `_kit_for_next_school_day` | Number of kit reminders for today's lessons / the next school day's, from the kit rules in options. Attributes: `items` (for example `PE kit`), `date` |
-| `binary_sensor.<child>_school_today` / `_school_tomorrow` | On if there is a timetable that day. Holidays are detected automatically |
+| `binary_sensor.<child>_school_today` / `_school_tomorrow` | On if there is a timetable that day. Holidays are detected automatically. School today stays on until midnight, or turns off when the last lesson ends if you turn on "School today ends after the last lesson" in the options |
 | `calendar.<child>_timetable` | One event per lesson |
 
 **Homework** (every 30 minutes, every 2 hours between 22:00 and 06:00; due today/tomorrow roll over at midnight)
@@ -105,6 +105,7 @@ Edulink returns the catering balance in pounds, as a whole number when there are
 - Homework update interval (default 30 minutes).
 - Outstanding homework look-ahead: how many days ahead the outstanding homework and urgency sensors look (default 7).
 - Show submitted homework in the calendar (default off).
+- School today ends after the last lesson (default off): turns the School today sensor off when the day's last lesson has ended, instead of at midnight. School tomorrow is not affected.
 - Kit reminders: one `subject keyword = item` rule per line. A keyword matches whole words in a lesson's subject, ignoring case. The defaults are:
   ```
   Physical Education = PE kit

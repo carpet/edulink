@@ -14,7 +14,12 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import CONF_LOW_BALANCE, DEFAULT_LOW_BALANCE
+from .const import (
+    CONF_LOW_BALANCE,
+    CONF_SCHOOL_TODAY_ENDS,
+    DEFAULT_LOW_BALANCE,
+    DEFAULT_SCHOOL_TODAY_ENDS,
+)
 from .coordinator import EdulinkConfigEntry, school_now
 from .entity import EdulinkEntity
 from .models import Catering, Timetable
@@ -39,6 +44,16 @@ def _day_times(tt: Timetable, now: datetime, offset: int) -> dict[str, Any] | No
     return {"start": day.start.isoformat(), "end": day.end.isoformat()}
 
 
+def _school_today(tt: Timetable, now: datetime, options: dict[str, Any]) -> bool:
+    """On for the school day, or only until the last lesson ends if so configured."""
+    day = tt.day(now.date())
+    if day is None:
+        return False
+    if not options.get(CONF_SCHOOL_TODAY_ENDS, DEFAULT_SCHOOL_TODAY_ENDS):
+        return True
+    return day.end is None or now < day.end
+
+
 def _threshold(options: dict[str, Any]) -> float:
     return float(options.get(CONF_LOW_BALANCE, DEFAULT_LOW_BALANCE))
 
@@ -47,7 +62,7 @@ TIMETABLE_BINARY_SENSORS: tuple[EdulinkBinarySensorDescription[Timetable], ...] 
     EdulinkBinarySensorDescription(
         key="school_today",
         translation_key="school_today",
-        is_on_fn=lambda tt, now, _o: tt.day(now.date()) is not None,
+        is_on_fn=_school_today,
         attrs_fn=lambda tt, now, _o: _day_times(tt, now, 0),
     ),
     EdulinkBinarySensorDescription(

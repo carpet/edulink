@@ -20,6 +20,7 @@ from pytest_homeassistant_custom_component.common import (
 from custom_components.edulink.const import (
     CONF_ACADEMIC_YEAR_START,
     CONF_CALENDAR_SUBMITTED,
+    CONF_SCHOOL_TODAY_ENDS,
     DOMAIN,
     OFF_HOURS_INTERVAL,
     RECORD_INTERVAL,
@@ -824,3 +825,58 @@ async def test_reauth_reloads_once_without_deprecation(
     assert fake.methods().count("EduLink.Login") == 2
     assert "update listener" not in caplog.text
     assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+
+
+async def test_school_today_stays_on_all_day_by_default(
+    hass: HomeAssistant, entry: MockConfigEntry, freezer: FrozenDateTimeFactory
+) -> None:
+    """Without the option the sensor is on until midnight, after the last lesson."""
+    freezer.move_to("2026-10-16 22:00:00+01:00")
+    await _setup(hass, entry)
+    assert _state(hass, "binary_sensor.alex_school_today") == "on"
+
+
+async def test_school_today_ends_after_last_lesson(
+    hass: HomeAssistant, entry: MockConfigEntry, freezer: FrozenDateTimeFactory
+) -> None:
+    """With the option the sensor turns off when the last lesson ends, on the minute."""
+    freezer.move_to(NOW)
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry, options={CONF_SCHOOL_TODAY_ENDS: True}
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert _state(hass, "binary_sensor.alex_school_today") == "on"
+    end = hass.states.get("binary_sensor.alex_school_today").attributes["end"]
+
+    freezer.move_to(datetime.fromisoformat(end) - timedelta(minutes=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert _state(hass, "binary_sensor.alex_school_today") == "on"
+
+    freezer.move_to(datetime.fromisoformat(end))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert _state(hass, "binary_sensor.alex_school_today") == "off"
+    # The day's times stay available, and tomorrow is unaffected.
+    assert hass.states.get("binary_sensor.alex_school_today").attributes["end"] == end
+
+
+@pytest.mark.parametrize("ends_after_last_lesson", [False, True])
+async def test_school_today_off_on_weekend(
+    hass: HomeAssistant,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+    ends_after_last_lesson: bool,
+) -> None:
+    """With or without the option, a day with no timetable is off all day."""
+    freezer.move_to("2026-10-17 10:00:00+01:00")
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry, options={CONF_SCHOOL_TODAY_ENDS: ends_after_last_lesson}
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert _state(hass, "binary_sensor.alex_school_today") == "off"
+    assert _state(hass, "binary_sensor.alex_school_tomorrow") == "off"

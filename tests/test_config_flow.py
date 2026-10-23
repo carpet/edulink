@@ -21,6 +21,7 @@ from custom_components.edulink.const import (
     CONF_KIT_RULES,
     CONF_LEARNERS,
     CONF_LOW_BALANCE,
+    CONF_SCHOOL_TODAY_ENDS,
     DOMAIN,
 )
 
@@ -206,12 +207,14 @@ async def test_options(
             CONF_CATERING_INTERVAL: 30,
             CONF_ACADEMIC_YEAR_START: 10,
             CONF_CALENDAR_SUBMITTED: True,
+            CONF_SCHOOL_TODAY_ENDS: True,
         },
     )
     await hass.async_block_till_done()
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_LOW_BALANCE] == 20
     assert entry.options[CONF_CALENDAR_SUBMITTED] is True
+    assert entry.options[CONF_SCHOOL_TODAY_ENDS] is True
     # Reloaded with the new options: £11 is now low, and February homework counts.
     assert hass.states.get("binary_sensor.alex_low_catering_balance").state == "on"
     assert hass.states.get("sensor.alex_homework_outstanding").state == "4"

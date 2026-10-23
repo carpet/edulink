@@ -50,6 +50,7 @@ from .const import (
     CONF_LOW_BALANCE,
     CONF_SCHOOL_CODE,
     CONF_SCHOOL_NAME,
+    CONF_SCHOOL_TODAY_ENDS,
     CONF_SERVER,
     CONF_USER_ID,
     DEFAULT_ACADEMIC_YEAR_START,
@@ -59,6 +60,7 @@ from .const import (
     DEFAULT_HOMEWORK_INTERVAL,
     DEFAULT_KIT_RULES,
     DEFAULT_LOW_BALANCE,
+    DEFAULT_SCHOOL_TODAY_ENDS,
     DOMAIN,
 )
 from .coordinator import EdulinkConfigEntry
@@ -313,6 +315,9 @@ class EdulinkOptionsFlow(OptionsFlowWithReload):
                 ),
                 vol.Required(
                     CONF_CALENDAR_SUBMITTED, default=DEFAULT_CALENDAR_SUBMITTED
+                ): BooleanSelector(),
+                vol.Required(
+                    CONF_SCHOOL_TODAY_ENDS, default=DEFAULT_SCHOOL_TODAY_ENDS
                 ): BooleanSelector(),
                 vol.Optional(CONF_KIT_RULES): TextSelector(
                     TextSelectorConfig(multiline=True)

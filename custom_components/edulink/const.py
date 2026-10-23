@@ -21,6 +21,7 @@ CONF_HOMEWORK_DAYS_AHEAD: Final = "homework_days_ahead"
 CONF_KIT_RULES: Final = "kit_rules"
 CONF_ACADEMIC_YEAR_START: Final = "academic_year_start_month"
 CONF_CALENDAR_SUBMITTED: Final = "calendar_show_submitted"
+CONF_SCHOOL_TODAY_ENDS: Final = "school_today_ends_after_last_lesson"
 
 DEFAULT_LOW_BALANCE: Final = 5.0
 DEFAULT_HOMEWORK_INTERVAL: Final = 30  # minutes
@@ -29,6 +30,7 @@ DEFAULT_HOMEWORK_DAYS_AHEAD: Final = 7
 # Edulink has no term or year dates; schools in England start in September.
 DEFAULT_ACADEMIC_YEAR_START: Final = 9
 DEFAULT_CALENDAR_SUBMITTED: Final = False
+DEFAULT_SCHOOL_TODAY_ENDS: Final = False
 # "subject keyword = item" per line.
 DEFAULT_KIT_RULES: Final = (
     "Physical Education = PE kit\n"

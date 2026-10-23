@@ -55,6 +55,7 @@
           "homework_interval": "Homework update interval",
           "homework_days_ahead": "Outstanding homework look-ahead",
           "calendar_show_submitted": "Show submitted homework in the calendar",
+          "school_today_ends_after_last_lesson": "School today ends after the last lesson",
           "kit_rules": "Kit reminders",
           "catering_interval": "Catering update interval during the school day",
           "academic_year_start_month": "Academic year starts in month"
@@ -63,6 +64,7 @@
           "catering_interval": "Outside 07:30 to 16:00 on weekdays catering updates every 2 hours.",
           "homework_interval": "Between 22:00 and 06:00 homework updates every 2 hours.",
           "homework_days_ahead": "The outstanding homework sensor only counts homework due within this many days. The due today, due tomorrow and next due sensors and the to-do list include all homework.",
+          "school_today_ends_after_last_lesson": "Turns the School today sensor off once the last lesson of the day has ended, instead of at midnight.",
           "kit_rules": "One rule per line, as subject keyword = item, for example Physical Education = PE kit. A keyword matches whole words in the lesson's subject, ignoring case.",
           "academic_year_start_month": "Achievement points and behaviour events this year count from the 1st of this month (9 is September)."
         }
