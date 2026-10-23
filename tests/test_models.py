@@ -22,6 +22,7 @@ from custom_components.edulink.models import (
     parse_status,
     parse_timetable,
 )
+from custom_components.edulink.sensor import _club_sessions_attrs
 
 from .conftest import load
 
@@ -420,3 +421,20 @@ def test_record_parsers_tolerate_malformed_fields() -> None:
     assert parse_status({"noticeboard": [], "new_messages": "2"}) == parse_status(
         {"new_messages": 2}
     )
+
+
+def test_club_session_attributes_are_school_local() -> None:
+    """Session times keep the school's UTC offset, so dashboards can read the hour."""
+    clubs = parse_clubs(
+        {
+            "clubs": [
+                {"id": "1", "name": "Summer", "next_session": "2026-07-01 15:30:00"},
+                {"id": "2", "name": "Winter", "next_session": "2026-12-01 15:30:00"},
+            ]
+        }
+    )
+    attrs = _club_sessions_attrs(clubs, datetime(2026, 6, 1, tzinfo=SCHOOL_TZ))
+    assert [(s["club"], s["start"]) for s in attrs["sessions"]] == [
+        ("Summer", "2026-07-01T15:30:00+01:00"),
+        ("Winter", "2026-12-01T15:30:00+00:00"),
+    ]
