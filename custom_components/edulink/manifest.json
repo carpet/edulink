@@ -1,6 +1,7 @@
 {
   "domain": "edulink",
   "name": "Edulink One",
+  "categories": ["productivity_information"],
   "codeowners": ["@carpet"],
   "config_flow": true,
   "documentation": "https://github.com/carpet/edulink",
