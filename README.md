@@ -1,6 +1,6 @@
 # Edulink One for Home Assistant
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories/)
+[![Marketplace Custom](https://img.shields.io/badge/Marketplace-Custom-41BDF5.svg)](https://www.home-assistant.io/integrations/marketplace/#custom-repositories)
 [![GitHub Release](https://img.shields.io/github/v/release/carpet/edulink)](https://github.com/carpet/edulink/releases)
 [![Validate](https://github.com/carpet/edulink/actions/workflows/validate.yml/badge.svg)](https://github.com/carpet/edulink/actions/workflows/validate.yml)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.10%2B-41BDF5?logo=home-assistant)](https://www.home-assistant.io/)
@@ -10,16 +10,18 @@ Unofficial Home Assistant integration for [Edulink One](https://www.edulinkone.c
 
 Not affiliated with or endorsed by Edulink One or its developers. Edulink has no public API: this integration uses the same JSON-RPC calls as the Edulink website and may break if they change.
 
-## Installation (HACS)
+## Installation (Marketplace)
 
-[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=carpet&repository=edulink&category=integration)
+[![Open your Home Assistant instance and open this repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=carpet&repository=edulink&category=integration)
 
-Use the button above, or add the repository manually:
+Edulink One is not in the Marketplace catalogue, so add it as a custom repository. Use the button above, or add it manually:
 
-1. HACS, three-dot menu, **Custom repositories**, add `https://github.com/carpet/edulink` as type **Integration**.
-2. Install **Edulink One** and restart Home Assistant.
-3. **Settings, Devices & services, Add integration, Edulink One**.
+1. **Settings, Marketplace**, **Add from link**, enter `https://github.com/carpet/edulink`, choose type **Integration** if asked, then **Add**. Adding a custom repository needs a GitHub connection, which the Marketplace sets up for you the first time.
+2. Open the repository's page and select **Install**. Restart Home Assistant if the Marketplace asks you to.
+3. **Settings, Devices & services, Add integration, Edulink One**, unless the setup page opened by itself after installing.
 4. Enter your school's postcode or Edulink school code, then your Edulink username and password. Parent accounts with several children can choose which to add.
+
+The Marketplace replaced HACS in Home Assistant 2026.11 and migrates HACS installations of this integration automatically, so there is nothing to do if you already had it. On 2026.10, install through HACS instead: three-dot menu, **Custom repositories**, add `https://github.com/carpet/edulink` as type **Integration**.
 
 Schools that only allow Microsoft sign-in are not supported.
 
