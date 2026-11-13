@@ -193,9 +193,15 @@ class Timetable:
                 return lesson.subject, lesson
         return "Break", None
 
-    def next_lesson(self, now: datetime) -> Lesson | None:
-        """The next non-registration lesson starting after now."""
+    def next_lesson(self, now: datetime, today_only: bool = False) -> Lesson | None:
+        """The next non-registration lesson starting after now.
+
+        today_only stops at the end of today, so there is none once the day's
+        last lesson has started.
+        """
         for day in sorted(d for d in self.days if d >= now.date()):
+            if today_only and day != now.date():
+                return None
             for lesson in self.days[day].teaching:
                 if lesson.start > now:
                     return lesson

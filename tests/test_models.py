@@ -83,6 +83,15 @@ def test_next_lesson_rolls_over_weekend() -> None:
     assert nxt.start == at(19, 8, 50)
 
 
+def test_next_lesson_today_only_stops_at_the_end_of_the_day() -> None:
+    """today_only gives nothing once Friday's last lesson has started."""
+    tt = timetable()
+    assert tt.next_lesson(at(16, 10), today_only=True).subject == "Drama"
+    assert tt.next_lesson(at(16, 14, 30), today_only=True) is None
+    # On a Saturday there is nothing today, though Monday has lessons.
+    assert tt.next_lesson(at(17, 10), today_only=True) is None
+
+
 def test_current_day_switches_after_school() -> None:
     """School day start/end refer to tomorrow's school day once today is over."""
     tt = timetable()

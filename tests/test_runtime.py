@@ -20,6 +20,7 @@ from pytest_homeassistant_custom_component.common import (
 from custom_components.edulink.const import (
     CONF_ACADEMIC_YEAR_START,
     CONF_CALENDAR_SUBMITTED,
+    CONF_NEXT_LESSON_TODAY_ONLY,
     CONF_SCHOOL_TODAY_ENDS,
     DOMAIN,
     OFF_HOURS_INTERVAL,
@@ -861,6 +862,39 @@ async def test_school_today_ends_after_last_lesson(
     assert _state(hass, "binary_sensor.alex_school_today") == "off"
     # The day's times stay available, and tomorrow is unaffected.
     assert hass.states.get("binary_sensor.alex_school_today").attributes["end"] == end
+
+
+async def test_next_lesson_looks_ahead_across_days_by_default(
+    hass: HomeAssistant, entry: MockConfigEntry, freezer: FrozenDateTimeFactory
+) -> None:
+    """Without the option Friday's last lesson is followed by Monday's first."""
+    freezer.move_to(at(10, 16, 14, 30))
+    await _setup(hass, entry)
+    assert _state(hass, "sensor.alex_next_lesson") == "Mathematics"
+    start = hass.states.get("sensor.alex_next_lesson").attributes["start"]
+    assert datetime.fromisoformat(start) == at(10, 19, 8, 50)
+
+
+async def test_next_lesson_today_only_empties_after_the_last_lesson(
+    hass: HomeAssistant, entry: MockConfigEntry, freezer: FrozenDateTimeFactory
+) -> None:
+    """With the option the sensor has no lesson once the last one has started."""
+    freezer.move_to(at(10, 16, 10))
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry, options={CONF_NEXT_LESSON_TODAY_ONLY: True}
+    )
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert _state(hass, "sensor.alex_next_lesson") == "Drama"
+
+    freezer.move_to(at(10, 16, 14, 30))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert _state(hass, "sensor.alex_next_lesson") == "unknown"
+    assert "start" not in hass.states.get("sensor.alex_next_lesson").attributes
+    # The current lesson is unaffected, so the dashboard still knows school is on.
+    assert _state(hass, "sensor.alex_current_lesson") != "Not in school"
 
 
 @pytest.mark.parametrize("ends_after_last_lesson", [False, True])

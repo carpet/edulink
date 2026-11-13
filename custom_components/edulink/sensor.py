@@ -23,10 +23,12 @@ from .const import (
     CONF_ACADEMIC_YEAR_START,
     CONF_HOMEWORK_DAYS_AHEAD,
     CONF_KIT_RULES,
+    CONF_NEXT_LESSON_TODAY_ONLY,
     CURRENCY,
     DEFAULT_ACADEMIC_YEAR_START,
     DEFAULT_HOMEWORK_DAYS_AHEAD,
     DEFAULT_KIT_RULES,
+    DEFAULT_NEXT_LESSON_TODAY_ONLY,
     OVERDUE_WINDOW_DAYS,
 )
 from .coordinator import EdulinkConfigEntry, EdulinkCoordinator, school_now
@@ -71,8 +73,10 @@ def _current_lesson_attrs(tt: Timetable, now: datetime) -> dict[str, Any] | None
     return lesson.as_dict() if lesson else None
 
 
-def _next_lesson_attrs(tt: Timetable, now: datetime) -> dict[str, Any] | None:
-    lesson = tt.next_lesson(now)
+def _next_lesson_attrs(
+    tt: Timetable, now: datetime, today_only: bool
+) -> dict[str, Any] | None:
+    lesson = tt.next_lesson(now, today_only)
     return lesson.as_dict() if lesson else None
 
 
@@ -96,12 +100,6 @@ TIMETABLE_SENSORS: tuple[EdulinkSensorDescription[Timetable], ...] = (
         translation_key="current_lesson",
         value_fn=lambda tt, now: tt.current_state(now)[0],
         attrs_fn=_current_lesson_attrs,
-    ),
-    EdulinkSensorDescription(
-        key="next_lesson",
-        translation_key="next_lesson",
-        value_fn=lambda tt, now: l.subject if (l := tt.next_lesson(now)) else None,
-        attrs_fn=_next_lesson_attrs,
     ),
     EdulinkSensorDescription(
         key="school_day_start",
@@ -163,6 +161,7 @@ def _kit_attrs(day: SchoolDay | None, rules: KitRules) -> dict[str, Any]:
 
 def _timetable_sensors(
     rules: KitRules,
+    next_lesson_today_only: bool,
 ) -> tuple[EdulinkSensorDescription[Timetable], ...]:
     """Timetable sensors, with kit reminders from the kit rules option."""
 
@@ -174,6 +173,18 @@ def _timetable_sensors(
 
     return (
         *TIMETABLE_SENSORS,
+        EdulinkSensorDescription(
+            key="next_lesson",
+            translation_key="next_lesson",
+            value_fn=lambda tt, now: (
+                l.subject
+                if (l := tt.next_lesson(now, next_lesson_today_only))
+                else None
+            ),
+            attrs_fn=lambda tt, now: _next_lesson_attrs(
+                tt, now, next_lesson_today_only
+            ),
+        ),
         EdulinkSensorDescription(
             key="kit_today",
             translation_key="kit_today",
@@ -605,7 +616,12 @@ async def async_setup_entry(
         (
             runtime.timetable,
             _timetable_sensors(
-                parse_kit_rules(entry.options.get(CONF_KIT_RULES, DEFAULT_KIT_RULES))
+                parse_kit_rules(entry.options.get(CONF_KIT_RULES, DEFAULT_KIT_RULES)),
+                bool(
+                    entry.options.get(
+                        CONF_NEXT_LESSON_TODAY_ONLY, DEFAULT_NEXT_LESSON_TODAY_ONLY
+                    )
+                ),
             ),
         ),
         (

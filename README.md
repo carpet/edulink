@@ -36,7 +36,7 @@ One device per child. Entities are only created for modules your school has enab
 | Entity | Description |
 |---|---|
 | `sensor.<child>_current_lesson` | Subject, or `Registration`, `Break`, `Not in school`. Attributes: room, period, start, end |
-| `sensor.<child>_next_lesson` | Next lesson's subject (looks ahead across days). Same attributes |
+| `sensor.<child>_next_lesson` | Next lesson's subject (looks ahead across days, or only to the end of today if you turn on "Next lesson is today only" in the options). Same attributes |
 | `sensor.<child>_school_day_start` / `_school_day_end` | Today's first/last period, or the next school day's once today has finished |
 | `sensor.<child>_next_school_day` | Next date after today with a timetable. Attribute `lessons` |
 | `sensor.<child>_lessons_today` / `_lessons_tomorrow` | Number of lessons that day (0 at weekends and holidays). Attribute `lessons` |
@@ -108,6 +108,7 @@ Edulink returns the catering balance in pounds, as a whole number when there are
 - Outstanding homework look-ahead: how many days ahead the outstanding homework and urgency sensors look (default 7).
 - Show submitted homework in the calendar (default off).
 - School today ends after the last lesson (default off): turns the School today sensor off when the day's last lesson has ended, instead of at midnight. School tomorrow is not affected.
+- Next lesson is today only (default off): leaves the Next lesson sensor empty once the day's last lesson has started, instead of looking ahead to the next school day. Useful for a dashboard card that should disappear at the end of the day rather than show Monday's first lesson on a Friday afternoon.
 - Kit reminders: one `subject keyword = item` rule per line. A keyword matches whole words in a lesson's subject, ignoring case. The defaults are:
   ```
   Physical Education = PE kit

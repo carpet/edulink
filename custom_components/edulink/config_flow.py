@@ -48,6 +48,7 @@ from .const import (
     CONF_KIT_RULES,
     CONF_LEARNERS,
     CONF_LOW_BALANCE,
+    CONF_NEXT_LESSON_TODAY_ONLY,
     CONF_SCHOOL_CODE,
     CONF_SCHOOL_NAME,
     CONF_SCHOOL_TODAY_ENDS,
@@ -60,6 +61,7 @@ from .const import (
     DEFAULT_HOMEWORK_INTERVAL,
     DEFAULT_KIT_RULES,
     DEFAULT_LOW_BALANCE,
+    DEFAULT_NEXT_LESSON_TODAY_ONLY,
     DEFAULT_SCHOOL_TODAY_ENDS,
     DOMAIN,
 )
@@ -318,6 +320,9 @@ class EdulinkOptionsFlow(OptionsFlowWithReload):
                 ): BooleanSelector(),
                 vol.Required(
                     CONF_SCHOOL_TODAY_ENDS, default=DEFAULT_SCHOOL_TODAY_ENDS
+                ): BooleanSelector(),
+                vol.Required(
+                    CONF_NEXT_LESSON_TODAY_ONLY, default=DEFAULT_NEXT_LESSON_TODAY_ONLY
                 ): BooleanSelector(),
                 vol.Optional(CONF_KIT_RULES): TextSelector(
                     TextSelectorConfig(multiline=True)
