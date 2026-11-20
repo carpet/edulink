@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.components.todo import TodoItem, TodoItemStatus
@@ -28,7 +28,7 @@ from custom_components.edulink.const import (
     RETRY_INTERVAL,
     STATUS_INTERVAL,
 )
-from custom_components.edulink.coordinator import retry_delay
+from custom_components.edulink.coordinator import retry_delay, until
 from custom_components.edulink.models import SCHOOL_TZ
 
 from .conftest import NOW, FakeEdulink, load
@@ -380,6 +380,36 @@ async def test_club_sensors_kept_while_clubs_fail(
     assert _state(hass, "sensor.alex_chess_club") == "unavailable"
 
 
+async def test_club_sensors_kept_when_clubs_response_is_malformed(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A success response without a list of clubs is not "left every club"."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    fake.responses["EduLink.Clubs"] = {"result": {"success": True, "clubs": "oops"}}
+    await entry.runtime_data.clubs.async_refresh()
+    await hass.async_block_till_done()
+    assert er.async_get(hass).async_get("sensor.alex_chess_club") is not None
+    assert _state(hass, "sensor.alex_chess_club") == "unavailable"
+
+
+def test_until_is_real_elapsed_time_across_clock_changes() -> None:
+    """The delay counts the hour that the clocks skip or repeat."""
+    spring = datetime(2027, 3, 27, 23, 0, tzinfo=SCHOOL_TZ)
+    assert until(spring, time(6, 0)) == timedelta(hours=6)
+    autumn = datetime(2027, 10, 30, 23, 0, tzinfo=SCHOOL_TZ)
+    assert until(autumn, time(6, 0)) == timedelta(hours=8)
+
+
+def test_retry_delay_survives_long_outages() -> None:
+    """Thousands of failures in a row still give the capped delay, not an overflow."""
+    assert retry_delay(1000, timedelta(minutes=15)) == timedelta(hours=2)
+    assert retry_delay(1000, RECORD_INTERVAL) == RECORD_INTERVAL
+
+
 def test_retry_delay_backs_off() -> None:
     """Failures in a row double the delay, up to the longer of 2 h or normal."""
     minutes = [
@@ -592,6 +622,27 @@ async def test_calendar_events_in_range(
     assert events[0]["end"] == "2026-10-18"
 
 
+async def test_calendar_query_for_learner_without_data(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    two_learner_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A learner whose first refresh failed has an empty calendar, not an error.
+
+    The REST calendar view calls async_get_events even on unavailable entities.
+    """
+    freezer.move_to(NOW)
+    fake.learner_errors[("EduLink.Homework", "7002")] = NOT_AUTHORISED
+    await _setup(hass, two_learner_entry)
+    assert _state(hass, "calendar.sam_homework") == "unavailable"
+    calendar = hass.data["entity_components"]["calendar"].get_entity(
+        "calendar.sam_homework"
+    )
+    events = await calendar.async_get_events(hass, at(10, 17, 0), at(10, 18, 0))
+    assert events == []
+
+
 async def _homework_calendar_summaries(hass: HomeAssistant) -> list[str]:
     result = await hass.services.async_call(
         "calendar",
@@ -782,6 +833,26 @@ async def test_todo_edulink_refusal_is_reported(
     with pytest.raises(HomeAssistantError, match="did not accept"):
         await _todo_update(hass, "101", status="completed")
     assert await _todo_status(hass, "101") == "needs_action"
+
+
+async def test_todo_quick_tick_untick_tick_reaches_edulink(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Each change is compared with Edulink's latest state, not a stale one."""
+    freezer.move_to(NOW)
+    await _setup(hass, entry)
+    await _todo_update(hass, "101", status="completed")
+    await _todo_update(hass, "101", status="needs_action")
+    await _todo_update(hass, "101", status="completed")
+    assert [c["completed"] for c in _completed_calls(fake)] == [
+        "true",
+        "false",
+        "true",
+    ]
+    assert await _todo_status(hass, "101") == "completed"
 
 
 async def test_homework_description_cache_is_pruned(

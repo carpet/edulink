@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 import logging
 from typing import Any
 
@@ -110,7 +110,9 @@ def until(now: datetime, at: time) -> timedelta:
     target = datetime.combine(now.date(), at, SCHOOL_TZ)
     if target <= now:
         target = datetime.combine(now.date() + timedelta(days=1), at, SCHOOL_TZ)
-    return target - now
+    # In UTC: two datetimes sharing one ZoneInfo subtract as wall-clock times,
+    # which is an hour out across a clock change.
+    return target.astimezone(UTC) - now.astimezone(UTC)
 
 
 def retry_delay(
@@ -121,7 +123,8 @@ def retry_delay(
     Doubles from RETRY_INTERVAL, up to the normal interval or MAX_BACKOFF,
     whichever is longer, and never sooner than Edulink asked.
     """
-    delay = min(RETRY_INTERVAL * 2 ** (failures - 1), max(normal, MAX_BACKOFF))
+    # The exponent is capped because timedelta overflows after about 37 doublings.
+    delay = min(RETRY_INTERVAL * 2 ** min(failures - 1, 10), max(normal, MAX_BACKOFF))
     if retry_after is not None:
         delay = max(delay, min(retry_after, MAX_RETRY_AFTER))
     return delay

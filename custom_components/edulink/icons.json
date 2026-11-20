@@ -16,7 +16,7 @@
       "school_day_end": { "default": "mdi:bell-outline" },
       "next_school_day": { "default": "mdi:calendar-arrow-right" },
       "lessons_today": { "default": "mdi:timetable" },
-      "lessons_tomorrow": { "default": "mdi:bag-personal-outline" },
+      "lessons_tomorrow": { "default": "mdi:calendar-clock" },
       "timetable_week": { "default": "mdi:calendar-week" },
       "kit_today": { "default": "mdi:bag-personal" },
       "kit_next_school_day": { "default": "mdi:bag-personal" },

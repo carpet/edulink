@@ -8,14 +8,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.diagnostics import async_redact_data
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_LEARNERS, CONF_USER_ID
 from .coordinator import EdulinkConfigEntry
-
-TO_REDACT = {CONF_PASSWORD, CONF_USERNAME, CONF_USER_ID, CONF_LEARNERS}
 
 
 async def async_get_config_entry_diagnostics(
@@ -39,7 +34,7 @@ async def async_get_config_entry_diagnostics(
                 "current": len(hw.current),
                 "past_recent": len(hw.past),
                 "with_description": sum(1 for h in hw.current if h.description),
-                "statuses": sorted({h.status for h in (*hw.current, *hw.past)}),
+                "distinct_statuses": len({h.status for h in (*hw.current, *hw.past)}),
             }
         if runtime.catering and (c := (runtime.catering.data or {}).get(learner.id)):
             info["catering"] = {
@@ -78,8 +73,9 @@ async def async_get_config_entry_diagnostics(
         )
         if coord is not None
     }
+    # entry.data (server, establishment id, school name, credentials) is left
+    # out: together they identify a child's school.
     return {
-        "entry": async_redact_data(dict(entry.data), TO_REDACT),
         "options": dict(entry.options),
         "coordinators": coordinators,
         "learners": learners,

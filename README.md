@@ -50,7 +50,7 @@ One device per child. Entities are only created for modules your school has enab
 | Entity | Description |
 |---|---|
 | `sensor.<child>_homework_outstanding` | Homework not marked complete and due within the next 7 days (set in options). Attribute `homework` lists them, each with `days_until_due` |
-| `sensor.<child>_homework_urgency` | `today`, `tomorrow`, `later` or `none`, from the soonest outstanding homework. Handy for colouring cards |
+| `sensor.<child>_homework_urgency` | `today` (also when outstanding homework is already past its due date), `tomorrow`, `later` or `none`, from the soonest outstanding homework. Handy for colouring cards. `_due_today` counts only homework due that exact day, so it can be 0 while urgency is `today` |
 | `sensor.<child>_homework_due_today` / `_due_tomorrow` | Outstanding homework due that day |
 | `sensor.<child>_next_homework_due` | Earliest due date, with subject, task, status and description |
 | `sensor.<child>_overdue_homework` | Disabled by default. Incomplete homework due in the last 14 days. Many schools do not track submission in Edulink, so this can be noisy |

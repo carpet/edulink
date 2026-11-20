@@ -28,14 +28,14 @@ from custom_components.edulink.const import (
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
-SERVER = "https://www9.edulinkone.com/api/"
+SERVER = "https://server.example.invalid/api/"
 PROVISIONING = "https://provisioning.edulinkone.com/"
-NOW = "2026-10-16 10:00:00+01:00"
+NOW = "2026-10-16 10:00:00+01:00"  # Friday, period 2 (English)
 # Edulink's response to a wrong username or password.
 LOGIN_FAILED = (
     "Login failed: The username or password is incorrect. "
     "Please try typing your password again"
-)  # Friday, period 2 (English)
+)
 
 
 def load(name: str) -> dict[str, Any]:

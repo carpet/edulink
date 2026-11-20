@@ -12,6 +12,7 @@ import pytest
 from custom_components.edulink.api import (
     EdulinkAuthError,
     EdulinkClient,
+    EdulinkConnectionError,
     EdulinkError,
     EdulinkPermissionError,
     EdulinkRateLimitError,
@@ -25,10 +26,10 @@ from .conftest import LOGIN_FAILED, SERVER, FakeEdulink
 @pytest.mark.parametrize(
     "server",
     [
-        "https://www9.edulinkone.com/api/",
-        "https://www9.edulinkone.com/api",
-        "https://www9.edulinkone.com/",
-        "https://www9.edulinkone.com",
+        "https://server.example.invalid/api/",
+        "https://server.example.invalid/api",
+        "https://server.example.invalid/",
+        "https://server.example.invalid",
     ],
 )
 def test_server_url(server: str) -> None:
@@ -87,6 +88,25 @@ async def test_other_login_error_is_not_an_auth_error(
     assert not isinstance(err.value, EdulinkAuthError)
 
 
+@pytest.mark.parametrize("clubs", ["oops", None, {"a": 1}])
+async def test_clubs_that_are_not_a_list_are_a_bad_response(
+    hass: HomeAssistant, fake: FakeEdulink, clubs: object
+) -> None:
+    """A present but non-list "clubs" is an error, so no one "leaves" their clubs."""
+    fake.responses["EduLink.Clubs"] = {"result": {"success": True, "clubs": clubs}}
+    with pytest.raises(EdulinkConnectionError):
+        await client(hass).clubs("7001")
+
+
+async def test_clubs_missing_or_empty_is_no_clubs(
+    hass: HomeAssistant, fake: FakeEdulink
+) -> None:
+    """An empty list, or no key at all, is accepted as a learner with no clubs."""
+    for result in ({"success": True, "clubs": []}, {"success": True}):
+        fake.responses["EduLink.Clubs"] = {"result": result}
+        assert await client(hass).clubs("7001") == result
+
+
 async def test_permission_error(hass: HomeAssistant, fake: FakeEdulink) -> None:
     """'Not authorised' maps to a permission error, not reauth."""
     c = client(hass)
@@ -105,6 +125,14 @@ async def test_permission_error(hass: HomeAssistant, fake: FakeEdulink) -> None:
         ("", None),
         ("soon", None),
         ("-5", None),
+        # Digits that are not ASCII are not a number of seconds.
+        ("²", None),
+        # A huge value is clamped to a day rather than overflowing.
+        ("86401", timedelta(days=1)),
+        ("9" * 30, timedelta(days=1)),
+        ("9" * 5000, timedelta(days=1)),
+        ("0" * 5000 + "5", timedelta(seconds=5)),
+        ("0", timedelta(0)),
         # A date in the past means no wait.
         ("Wed, 21 Oct 2015 07:28:00 GMT", timedelta(0)),
     ],

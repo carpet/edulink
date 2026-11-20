@@ -115,7 +115,6 @@ def test_homework() -> None:
     assert hw.urgency(date(2026, 10, 15)) == "tomorrow"
     assert hw.urgency(date(2026, 10, 14)) == "later"
     assert hw.urgency(date(2026, 10, 14), until=date(2026, 10, 15)) == "none"
-    assert hw.current[1].attachments == 1
 
 
 def test_html_to_text() -> None:
@@ -235,7 +234,6 @@ def test_parsers_tolerate_malformed_fields() -> None:
                         "id": 1,
                         "due_date": "2026-10-20",
                         "completed": "false",
-                        "attachments": "x",
                     },
                     {"id": 2, "due_date": None},
                     {"due_date": "2026-10-20"},
@@ -247,7 +245,7 @@ def test_parsers_tolerate_malformed_fields() -> None:
         date(2026, 10, 16),
         30,
     )
-    assert [(h.id, h.completed, h.attachments) for h in hw.current] == [("1", False, 0)]
+    assert [(h.id, h.completed) for h in hw.current] == [("1", False)]
     assert parse_homework({"homework": []}, date(2026, 10, 16), 30).current == []
 
     c = parse_catering(

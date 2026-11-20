@@ -97,4 +97,6 @@ class HomeworkTodo(EdulinkEntity[HomeworkList], TodoListEntity):
                 translation_key="homework_update_failed",
                 translation_placeholders={"error": str(err)},
             ) from err
-        await self.coordinator.async_request_refresh()
+        # Not async_request_refresh: its cooldown can leave hw.completed stale,
+        # so a quick untick and tick would be dropped as "no change".
+        await self.coordinator.async_refresh()

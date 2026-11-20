@@ -23,6 +23,8 @@ _LOGGER = logging.getLogger(__name__)
 
 PROVISIONING_URL = "https://provisioning.edulinkone.com/"
 TIMEOUT = aiohttp.ClientTimeout(total=30)
+# Upper bound on a parsed Retry-After, so a huge header cannot overflow timedelta.
+MAX_RETRY_AFTER_SECONDS = 24 * 60 * 60
 
 # Errors are returned with HTTP 200 and result.success = false; these are the
 # result.error strings we act on.
@@ -167,8 +169,12 @@ def _retry_after(value: str | None) -> timedelta | None:
     if not value:
         return None
     value = value.strip()
-    if value.isdigit():
-        return timedelta(seconds=int(value))
+    # isascii: str.isdigit() accepts characters such as "²" that int() rejects.
+    if value.isascii() and value.isdigit():
+        # int() itself raises on thousands of digits, so check the length first.
+        digits = value.lstrip("0")
+        seconds = MAX_RETRY_AFTER_SECONDS if len(digits) > 9 else int(digits or 0)
+        return timedelta(seconds=min(seconds, MAX_RETRY_AFTER_SECONDS))
     try:
         when = parsedate_to_datetime(value)
     except (TypeError, ValueError):
@@ -364,9 +370,14 @@ class EdulinkClient:
 
     async def clubs(self, learner_id: str) -> dict[str, Any]:
         """Clubs the learner belongs to."""
-        return await self.call(
+        result = await self.call(
             "EduLink.Clubs", {"member": True, "learner_id": learner_id}
         )
+        # An empty list means no clubs. Anything else present is a bad response,
+        # which must not look like the learner leaving every club.
+        if "clubs" in result and not isinstance(result["clubs"], list):
+            raise EdulinkConnectionError("EduLink.Clubs: malformed response")
+        return result
 
     async def status(self) -> dict[str, Any]:
         """Account-wide unread counts. Takes no learner."""

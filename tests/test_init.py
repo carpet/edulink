@@ -499,8 +499,12 @@ async def test_diagnostics_have_no_personal_data(
         "Chess",
         "Synthetic",
         "Member1",
+        "Example Academy",
+        "server.example.invalid",
+        "'999'",
     ):
         assert secret not in text
+    assert "entry" not in diag
     learner = diag["learners"][0]
     assert learner["homework"]["current"] == 5
     assert learner["achievement"] == {"events": 4}

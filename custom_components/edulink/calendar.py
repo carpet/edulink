@@ -68,7 +68,11 @@ class _EdulinkCalendar[T](EdulinkEntity[T], CalendarEntity):
         raise NotImplementedError
 
     def _events(self) -> list[CalendarEvent]:
-        data = self.learner_data
+        # The REST calendar view queries even unavailable entities, and a
+        # learner whose first refresh failed has no data yet.
+        data = (self.coordinator.data or {}).get(self.learner.id)
+        if data is None:
+            return []
         if data is not self._built_for:
             self._built = self._build(data)
             self._built_for = data

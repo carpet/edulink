@@ -111,7 +111,6 @@ class SchoolDay:
 
     date: date
     name: str
-    cycle_day_id: str | None
     lessons: tuple[Lesson, ...]
 
     @property
@@ -277,7 +276,6 @@ def parse_timetable(result: dict[str, Any], requested: date | None = None) -> Ti
             timetable.days[day] = SchoolDay(
                 date=day,
                 name=_str(raw_day.get("name")),
-                cycle_day_id=_str(raw_day.get("cycle_day_id")) or None,
                 lessons=tuple(lessons),
             )
     return timetable
@@ -303,12 +301,10 @@ class Homework:
     subject: str
     activity: str
     due: date
-    set_on: datetime | None
     set_by: str
     status: str
     completed: bool
     source: str
-    attachments: int
     description: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
@@ -393,12 +389,10 @@ def _homework(raw: dict[str, Any]) -> Homework | None:
         subject=_str(raw.get("subject")),
         activity=_str(raw.get("activity")),
         due=due,
-        set_on=_parse_dt(raw.get("available_date")),
         set_by=_str(raw.get("set_by")),
         status=_str(raw.get("status")),
         completed=raw.get("completed") is True,
         source=_str(raw.get("source")) or "EduLink",
-        attachments=len(_dicts(raw.get("attachments"))),
     )
 
 

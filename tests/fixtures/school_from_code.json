@@ -4,7 +4,7 @@
   "success": true,
   "school": {
    "school_id": 999,
-   "server": "https://www9.edulinkone.com/api/"
+   "server": "https://server.example.invalid/api/"
   }
  },
  "id": "1"
