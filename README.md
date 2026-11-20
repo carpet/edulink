@@ -63,10 +63,10 @@ One device per child. Entities are only created for modules your school has enab
 |---|---|
 | `sensor.<child>_catering_balance` | Balance in GBP |
 | `binary_sensor.<child>_low_catering_balance` | On below the threshold set in options (default £5) |
-| `sensor.<child>_last_purchase` | Time of last purchase. Attributes: items, total |
+| `sensor.<child>_last_purchase` | Time of last purchase. Attributes: items, total. Edulink only lists about the last four weeks of transactions, so this keeps the last value it saw (also across restarts) instead of going unknown |
 | `sensor.<child>_spent_today` / `_spent_this_week` | Spend since midnight / Monday. Recorded as long-term statistics (resetting daily / weekly), so a statistics graph can chart spend per day or week. Spent today has attributes `purchases` and `items` (item names bought today) |
-| `sensor.<child>_last_top_up` | Time of the last top-up. Attribute `amount` |
-| `sensor.<child>_last_top_up_amount` | Amount of the last top-up in GBP |
+| `sensor.<child>_last_top_up` | Time of the last top-up. Attribute `amount`. Kept in the same way as the last purchase |
+| `sensor.<child>_last_top_up_amount` | Amount of the last top-up in GBP. Kept in the same way as the last purchase |
 
 **Clubs** (every 12 hours)
 
@@ -180,7 +180,7 @@ The integration is read-only apart from one action: ticking or unticking a homew
 
 Achievement, behaviour and attendance entities are disabled by default, so nothing about a child's school record is stored until you enable them. They expose counts, points and dates only.
 
-Be aware of what ends up in Home Assistant's history. Sensor attributes include lesson subjects and rooms, homework subjects, tasks and descriptions, catering items bought, and club names and locations. Home Assistant's recorder keeps attributes along with states, so these are stored in your database and backups. Homework descriptions are the exception: they are teachers' free text and can mention staff, so they are excluded from the recorder. Teacher names are deliberately kept out of sensor attributes otherwise; they appear only in calendar event descriptions, which Home Assistant also excludes from the recorder. Exclude entities from the recorder if you do not want this history.
+Be aware of what ends up in Home Assistant's history. Sensor attributes include lesson subjects and rooms, homework subjects, tasks and descriptions, catering items bought, and club names and locations. Home Assistant's recorder keeps attributes along with states, so these are stored in your database and backups. Homework descriptions are the exception: they are teachers' free text and can mention staff, so they are excluded from the recorder. Teacher names are deliberately kept out of sensor attributes otherwise; they appear only in calendar event descriptions, which Home Assistant also excludes from the recorder. Exclude entities from the recorder if you do not want this history. The last purchase and last top-up sensors also keep their last value and attributes (items, total and amount) in Home Assistant's restore-state storage, so that they survive a restart. That storage is separate from the recorder and is included in backups, so excluding the entities from the recorder does not remove it. Disable those entities if you do not want it stored.
 
 Diagnostics downloads contain counts only, never names, homework text or purchases.
 

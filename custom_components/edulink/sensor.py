@@ -16,7 +16,13 @@ from homeassistant.components.sensor import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.restore_state import (
+    ExtraStoredData,
+    RestoredExtraData,
+    RestoreEntity,
+)
 from homeassistant.helpers.typing import StateType
+from homeassistant.util import dt as dt_util
 
 from .api import Learner
 from .const import (
@@ -63,6 +69,9 @@ class EdulinkSensorDescription[T](SensorEntityDescription):
     value_fn: Callable[[T, datetime], SensorValue]
     attrs_fn: Callable[[T, datetime], dict[str, Any] | None] = lambda _d, _n: None
     last_reset_fn: Callable[[datetime], datetime] | None = None
+    # Keep the last value Edulink reported, across polls and restarts, once
+    # it no longer reports one.
+    keep_last: bool = False
 
 
 # ---------------------------------------------------------------- timetable
@@ -327,6 +336,7 @@ CATERING_SENSORS: tuple[EdulinkSensorDescription[Catering], ...] = (
     ),
     EdulinkSensorDescription(
         key="last_purchase",
+        keep_last=True,
         translation_key="last_purchase",
         device_class=SensorDeviceClass.TIMESTAMP,
         value_fn=lambda c, _now: c.purchases[0].when if c.purchases else None,
@@ -355,6 +365,7 @@ CATERING_SENSORS: tuple[EdulinkSensorDescription[Catering], ...] = (
     ),
     EdulinkSensorDescription(
         key="last_top_up",
+        keep_last=True,
         translation_key="last_top_up",
         device_class=SensorDeviceClass.TIMESTAMP,
         value_fn=lambda c, _now: c.top_ups[0].when if c.top_ups else None,
@@ -362,6 +373,7 @@ CATERING_SENSORS: tuple[EdulinkSensorDescription[Catering], ...] = (
     ),
     EdulinkSensorDescription(
         key="last_top_up_amount",
+        keep_last=True,
         translation_key="last_top_up_amount",
         device_class=SensorDeviceClass.MONETARY,
         native_unit_of_measurement=CURRENCY,
@@ -643,7 +655,9 @@ async def async_setup_entry(
         if coordinator is None:
             continue
         entities.extend(
-            EdulinkSensor(coordinator, learner, description)
+            (EdulinkRestoringSensor if description.keep_last else EdulinkSensor)(
+                coordinator, learner, description
+            )
             for learner in runtime.learners
             for description in descriptions
         )
@@ -681,6 +695,73 @@ class EdulinkSensor[T](EdulinkEntity[T], SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any] | None:
         """Return extra attributes."""
         return self.entity_description.attrs_fn(self.learner_data, school_now())
+
+
+class EdulinkRestoringSensor[T](EdulinkSensor[T], RestoreEntity):
+    """A sensor that keeps the last value Edulink reported.
+
+    Edulink's catering list only covers about the last four weeks, so "last
+    purchase" and "last top-up" would otherwise go unknown for a child who
+    hasn't used their account in that time. The last value (and attributes) is
+    kept across polls and restored after a restart.
+    """
+
+    _kept_value: SensorValue = None
+    _kept_attrs: dict[str, Any] | None = None
+
+    async def async_added_to_hass(self) -> None:
+        """Restore the last value, then prefer anything Edulink has now."""
+        await super().async_added_to_hass()
+        if (extra := await self.async_get_last_extra_data()) is not None:
+            data = extra.as_dict()
+            self._kept_value = self._decode(data.get("value"))
+            attrs = data.get("attrs")
+            self._kept_attrs = attrs if isinstance(attrs, dict) else None
+            if self._kept_value is None:
+                self._kept_attrs = None
+        self._remember()
+
+    def _decode(self, value: Any) -> SensorValue:
+        if self.entity_description.device_class is SensorDeviceClass.TIMESTAMP:
+            return dt_util.parse_datetime(value) if isinstance(value, str) else None
+        if isinstance(value, int | float) and not isinstance(value, bool):
+            return float(value)
+        return None
+
+    @callback
+    def _remember(self) -> None:
+        """Keep Edulink's value when it has one."""
+        if not self.available:
+            return
+        if (value := super().native_value) is not None:
+            self._kept_value = value
+            self._kept_attrs = super().extra_state_attributes
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self._remember()
+        super()._handle_coordinator_update()
+
+    @property
+    def native_value(self) -> SensorValue:
+        """Return the last value Edulink reported."""
+        return self._kept_value
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return the attributes that went with that value."""
+        return self._kept_attrs
+
+    @property
+    def extra_restore_state_data(self) -> ExtraStoredData:
+        """Store the kept value and attributes."""
+        value = self._kept_value
+        return RestoredExtraData(
+            {
+                "value": value.isoformat() if isinstance(value, datetime) else value,
+                "attrs": self._kept_attrs,
+            }
+        )
 
 
 class EdulinkClubSensor(EdulinkSensor[Clubs]):

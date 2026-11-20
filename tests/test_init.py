@@ -6,12 +6,13 @@ from datetime import timedelta
 
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 import pytest
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
+    mock_restore_cache_with_extra_data,
 )
 
 from custom_components.edulink.const import (
@@ -272,6 +273,137 @@ async def test_catering_entities(hass: HomeAssistant, setup: MockConfigEntry) ->
     assert amount.state == "15.0"
     assert amount.attributes["unit_of_measurement"] == "GBP"
     assert "state_class" not in amount.attributes
+
+
+def _no_transactions(fake: FakeEdulink) -> None:
+    """Edulink reports no transactions, as after its window moves past them."""
+    emptied = load("catering.json")
+    emptied["result"]["transactions"] = []
+    fake.responses["EduLink.Catering"] = emptied
+
+
+async def test_last_purchase_and_top_up_survive_edulink_forgetting_them(
+    hass: HomeAssistant, fake: FakeEdulink, setup: MockConfigEntry
+) -> None:
+    """Edulink only lists about four weeks, so the last values are kept."""
+    purchase = state(hass, "sensor.alex_last_purchase")
+    top_up = state(hass, "sensor.alex_last_top_up")
+    amount = state(hass, "sensor.alex_last_top_up_amount")
+    _no_transactions(fake)
+    await setup.runtime_data.catering.async_refresh()
+    await hass.async_block_till_done()
+    for before in (purchase, top_up, amount):
+        after = state(hass, before.entity_id)
+        assert after.state == before.state
+        assert after.attributes == before.attributes
+    # Period totals describe now, so they do reset.
+    assert state(hass, "sensor.alex_spent_this_week").state == "0"
+
+
+async def test_newer_transactions_replace_the_kept_values(
+    hass: HomeAssistant, fake: FakeEdulink, setup: MockConfigEntry
+) -> None:
+    """A new top-up or purchase wins over the kept one."""
+    newer = load("catering.json")
+    newer["result"]["transactions"] = [
+        {
+            "date": "2026-10-16 13:00:00",
+            "items": [{"item": "PC Revaluer", "price": 20}],
+        },
+        {"date": "2026-10-16 13:05:00", "items": [{"item": "TOAST ", "price": -1.2}]},
+    ]
+    fake.responses["EduLink.Catering"] = newer
+    await setup.runtime_data.catering.async_refresh()
+    await hass.async_block_till_done()
+    assert state(hass, "sensor.alex_last_purchase").state == "2026-10-16T12:05:00+00:00"
+    assert state(hass, "sensor.alex_last_top_up").state == "2026-10-16T12:00:00+00:00"
+    assert state(hass, "sensor.alex_last_top_up_amount").state == "20.0"
+
+
+async def test_last_values_restored_after_restart(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Values Edulink no longer reports come back after Home Assistant restarts."""
+    _no_transactions(fake)
+    purchase = {
+        "time": "2026-09-21T11:50:21+00:00",
+        "items": [{"item": "PASTA ", "price": -2.2}],
+        "total": -2.2,
+    }
+    mock_restore_cache_with_extra_data(
+        hass,
+        [
+            (
+                State(
+                    "sensor.alex_last_purchase", "2026-09-21T11:50:21+00:00", purchase
+                ),
+                {"value": "2026-09-21T11:50:21+00:00", "attrs": purchase},
+            ),
+            (
+                State("sensor.alex_last_top_up", "2026-09-21T12:30:46+00:00"),
+                {"value": "2026-09-21T12:30:46+00:00", "attrs": {"amount": 15}},
+            ),
+            (
+                State("sensor.alex_last_top_up_amount", "15.0"),
+                {"value": 15.0, "attrs": None},
+            ),
+        ],
+    )
+    freezer.move_to(NOW)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert state(hass, "sensor.alex_last_purchase").state == "2026-09-21T11:50:21+00:00"
+    assert state(hass, "sensor.alex_last_purchase").attributes["total"] == -2.2
+    assert state(hass, "sensor.alex_last_top_up").state == "2026-09-21T12:30:46+00:00"
+    assert state(hass, "sensor.alex_last_top_up").attributes["amount"] == 15
+    assert state(hass, "sensor.alex_last_top_up_amount").state == "15.0"
+
+
+async def test_edulink_values_beat_restored_values(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """On restart, what Edulink reports now wins over the restored value."""
+    mock_restore_cache_with_extra_data(
+        hass,
+        [
+            (
+                State("sensor.alex_last_top_up_amount", "99.0"),
+                {"value": 99.0, "attrs": None},
+            )
+        ],
+    )
+    freezer.move_to(NOW)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert state(hass, "sensor.alex_last_top_up_amount").state == "15.0"
+
+
+async def test_last_values_unknown_with_nothing_to_restore(
+    hass: HomeAssistant,
+    fake: FakeEdulink,
+    entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A child with no history and nothing restored is still unknown."""
+    _no_transactions(fake)
+    freezer.move_to(NOW)
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    for entity_id in (
+        "sensor.alex_last_purchase",
+        "sensor.alex_last_top_up",
+        "sensor.alex_last_top_up_amount",
+    ):
+        assert state(hass, entity_id).state == "unknown"
 
 
 @pytest.mark.usefixtures("entity_registry_enabled_by_default")
